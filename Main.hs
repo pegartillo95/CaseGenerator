@@ -9,7 +9,7 @@ import GHC.Generics
 
 -----------------------------------------------------------------------------------
 -- | Programming generic size and generic enumeration of values
--- | autor: Ricardo Peña, febrero 2017
+-- | autor: Ricardo Peña & Pedro García Castillo, febrero 2017
 -----------------------------------------------------------------------------------
 
 -- | This is the exported, visible class
@@ -35,8 +35,26 @@ instance GSized U1 where
 instance (GSized a, GSized b) => GSized (a :*: b) where
   gsize (x :*: y) = gsize x + gsize y
   gall = compose gall gall
-         where compose xs ys = concat [diag i xs ys | i <- [0..]]
-               diag i xs ys = [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]]
+         where compose xs ys = diag 0 xs ys False False
+               diag _ [] [] _ _ = []
+               diag i xs ys a b
+                  | (a == True) && (b==True) = [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag (i-1) xs' ys' True True
+                  | (a == True) && (b==False) = if (drop i ys == [])
+                  	                                   then [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag (i-1) xs' ys' True True
+                  	                                   else [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag i xs ys' True False
+                  | (a == False) && (b==True) = if (drop i xs == [])
+                  	                                   then [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag (i-1) xs' ys' True True
+                  	                                   else [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag i xs' ys False True
+                  | (a == False) && (b==False) = if ((drop i xs == []) && (drop i ys == []))
+                  	                                   then [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag (i-1) xs' ys' True True
+                  	                                   else if ((drop i xs == []) && (drop i ys /= []))
+                  	                                   	    then [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag i xs ys' True False
+                  	                                   	    else if ((drop i xs /= []) && (drop i ys == []))
+                  	                                   	    	then [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag i xs' ys False True
+                  	                                   	    	else [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag (i+1) xs ys False False
+                  where xs' = drop 1 xs
+                        ys' = drop 1 ys
+
 
 -- | Sums: encode choice between constructors
 instance (GSized a, GSized b) => GSized (a :+: b) where
