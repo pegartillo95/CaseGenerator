@@ -38,20 +38,20 @@ instance (GSized a, GSized b) => GSized (a :*: b) where
          where compose xs ys = diag 0 xs ys False False
                diag _ [] [] _ _ = []
                diag i xs ys a b
-                  | (a == True) && (b==True) = [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag (i-1) xs' ys' True True
-                  | (a == True) && (b==False) = if (drop i ys == [])
-                  	                                   then [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag (i-1) xs' ys' True True
-                  	                                   else [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag i xs ys' True False
-                  | (a == False) && (b==True) = if (drop i xs == [])
-                  	                                   then [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag (i-1) xs' ys' True True
-                  	                                   else [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag i xs' ys False True
-                  | (a == False) && (b==False) = if ((drop i xs == []) && (drop i ys == []))
-                  	                                   then [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag (i-1) xs' ys' True True
-                  	                                   else if ((drop i xs == []) && (drop i ys /= []))
-                  	                                   	    then [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag i xs ys' True False
-                  	                                   	    else if ((drop i xs /= []) && (drop i ys == []))
-                  	                                   	    	then [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag i xs' ys False True
-                  	                                   	    	else [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag (i+1) xs ys False False
+                  | a && b = [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag (i-1) xs' ys' True True
+                  | a && not b = if (null(drop i ys))
+                                    then [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag (i-1) xs' ys' True True
+                                    else [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag i xs ys' True False
+                  | not a && b = if (null(drop i xs))
+                                    then [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag (i-1) xs' ys' True True
+                                    else [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag i xs' ys False True
+                  | not a && not b = if (null(drop i xs) && null(drop i ys))
+                                        then [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag (i-1) xs' ys' True True
+                                        else if (null(drop i xs) && not(null(drop i ys)))
+                                                then [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag i xs ys' True False
+                                                else if (not(null(drop i xs)) && null(drop i ys))
+                                                        then [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag i xs' ys False True
+                                                        else [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag (i+1) xs ys False False
                   where xs' = drop 1 xs
                         ys' = drop 1 ys
 
