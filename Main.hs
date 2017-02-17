@@ -3,7 +3,7 @@
 {-# LANGUAGE DefaultSignatures, DeriveGeneric, TypeOperators, FlexibleContexts #-}
  
 
-module Main where
+module Generator where
 
 import GHC.Generics
 
@@ -39,13 +39,13 @@ instance (GSized a, GSized b) => GSized (a :*: b) where
                diag _ [] [] _ _ = []
                diag i xs ys a b
                   | a && b = [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag (i-1) xs' ys' True True
-                  | a && not b = if (null(drop i ys))
+                  | a && (not b) = if (null(drop i ys))
                                     then [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag (i-1) xs' ys' True True
                                     else [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag i xs ys' True False
-                  | not a && b = if (null(drop i xs))
+                  | (not a) && b = if (null(drop i xs))
                                     then [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag (i-1) xs' ys' True True
                                     else [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag i xs' ys False True
-                  | not a && not b = if (null(drop i xs) && null(drop i ys))
+                  | (not a) && (not b) = if (null(drop i xs) && null(drop i ys))
                                         then [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag (i-1) xs' ys' True True
                                         else if (null(drop i xs) && not(null(drop i ys)))
                                                 then [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]] ++ diag i xs ys' True False
