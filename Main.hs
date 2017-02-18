@@ -35,12 +35,28 @@ instance GSized U1 where
 instance (GSized a, GSized b) => GSized (a :*: b) where
   gsize (x :*: y) = gsize x + gsize y
   gall = compose gall gall
-         where compose xs ys = diag 0 xs ys False False
+           where compose xs ys = concat [diag i xs ys | i <- [0..]]
+                 diag i xs ys = if(null(drop i xs)) 
+                                   then if(null(drop i ys))
+                                           then if(firstLongest xs ys)
+                                                   then [(xs !! k) :*: (ys !! (i-k)) | k <- [(i-(length ys)+1)..((length xs)-1)]]
+                                                   else [(xs !! k) :*: (ys !! (i-k)) | k <- [(i-(length ys)+1)..((length xs)-1)]]
+                                           else [(xs !! (k-(i-(length xs) + 1))) :*: (ys !! (i-k)) | k <-[(i-(length xs) +1)..i]]
+                                    else if(null(drop i ys))
+                                           then [(xs !! k) :*: (ys !! (i-k)) | k <- [(i-(length ys) +1)..i]]
+                                           else [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]]
+
+                 firstLongest xs ys = if(length xs >= length ys) 
+                                       then True
+                                       else False
+
+
+         {-where compose xs ys = diag 0 xs ys False False
                diag _ [] [] _ _ = []
                diag i xs ys a b
                   | a && b = zs ++ diag (i-1) xs' ys' True True
                   | a && (not b) = if (null(drop (i+1) ys))
-                                    then  ++ diag (i-1) xs' ys' True True
+                                    then zs  ++ diag (i-1) xs' ys' True True
                                     else zs ++ diag i xs ys' True False
                   | (not a) && b = if (null(drop (i+1) xs))
                                     then zs ++ diag (i-1) xs' ys' True True
@@ -54,7 +70,7 @@ instance (GSized a, GSized b) => GSized (a :*: b) where
                                                         else zs ++ diag (i+1) xs ys False False
                   where xs' = drop 1 xs
                         ys' = drop 1 ys
-                        zs = [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]]
+                        zs = [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]]-}
 
 
 -- | Sums: encode choice between constructors
@@ -119,6 +135,10 @@ alltree n = E: map node (compose [0..n] (compose (alltree n) (alltree n)))
 data NTree a = NT a Int [NTree a]
                deriving (Generic, Show)
 instance Sized a => Sized (NTree a) where
+
+data IntChar = IN Int Char
+              deriving(Generic,Show)
+instance Sized IntChar where
 
 
 
