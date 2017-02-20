@@ -39,13 +39,17 @@ instance (GSized a, GSized b) => GSized (a :*: b) where
                  diag i xs ys = if(null(drop i xs)) 
                                    then if(null(drop i ys))
                                            then if(firstLongest xs ys)
-                                                   then [(xs !! k) :*: (ys !! (i-k)) | k <- [(i-(length ys)+1)..((length xs)-1)]]
-                                                   else [(xs !! k) :*: (ys !! (i-k)) | k <- [(i-(length ys)+1)..((length xs)-1)]]
+                                                   then if(i < (length xs))
+                                                         then [(xs !! k) :*: (ys !! (i-k)) | k <- [(i-(length ys)+1)..((length xs)-1)]]
+                                                         else diag (mod i (length xs)) xs ys
+                                                   else if(i < (length ys))
+                                                         then [(xs !! k) :*: (ys !! (i-k)) | k <- [(i-(length ys)+1)..((length xs)-1)]]
+                                                         else diag (mod i (length ys)) xs ys
                                            else [(xs !! (k-(i-(length xs) + 1))) :*: (ys !! (i-k)) | k <-[(i-(length xs) +1)..i]]
                                     else if(null(drop i ys))
                                            then [(xs !! k) :*: (ys !! (i-k)) | k <- [(i-(length ys) +1)..i]]
                                            else [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]]
-
+                 
                  firstLongest xs ys = if(length xs >= length ys) 
                                        then True
                                        else False
@@ -136,10 +140,15 @@ data NTree a = NT a Int [NTree a]
                deriving (Generic, Show)
 instance Sized a => Sized (NTree a) where
 
+--New datatypes just for some more testing
 data IntChar = IN Int Char
               deriving(Generic,Show)
 instance Sized IntChar where
 
+data TripleInt = TrIn Int Int Int
+              deriving(Generic,Show)
+instance Sized TripleInt where
 
-
-
+data CharOrInt = Char Char | Int Int
+              deriving(Generic,Show)
+instance Sized CharOrInt where
