@@ -1,8 +1,10 @@
-module Lib
+{-# LANGUAGE DefaultSignatures, DeriveGeneric, TypeOperators, FlexibleContexts #-}
+
+module Compose
     ( compose
-    , compon
     ) where
 
+import GHC.Generics
 import qualified Data.Set as S
 import qualified Data.PQueue.Min as Q
 import System.IO.Unsafe (unsafePerformIO)
@@ -102,7 +104,7 @@ compon xs ys = concat $ diags 0 0 0 xs ys
 
 
 diags :: (Num a, Ord a, Show a) => 
-         Int -> Int -> Int -> [a] -> [a] -> [[QElem a (a,a)]]
+         Int -> Int -> Int -> [a] -> [b] -> [[QElem a (a:*:b)]]
 
 diags _ _  _  [] [] = [[]]
 diags i dx dy xs ys
@@ -120,7 +122,7 @@ diags i dx dy xs ys
         fullDiag     = not (null xs') && not (null ys')
         finiteFirst  = null xs' && not (null ys')
         finiteSecond = not (null xs') && null ys'
-        tup k        = (x+y, (k+dx, i-k+dy), (x,y))
+        tup k        = (x+y, (k+dx, i-k+dy), (x :*: y))
                        where x = xs !! k 
                              y = ys !! (i-k)
 

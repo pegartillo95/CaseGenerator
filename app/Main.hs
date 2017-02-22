@@ -3,14 +3,20 @@
 {-# LANGUAGE DefaultSignatures, DeriveGeneric, TypeOperators, FlexibleContexts #-}
  
 
-module Generator where
+module Main where
 
 import GHC.Generics
+import Compose as C
 
 -----------------------------------------------------------------------------------
 -- | Programming generic size and generic enumeration of values
 -- | autor: Ricardo Peña & Pedro García Castillo, febrero 2017
 -----------------------------------------------------------------------------------
+
+--Dumb main function
+main :: IO ()
+main = putStrLn "Test suite not yet implemented"
+
 
 -- | This is the exported, visible class
 class Sized a where
@@ -53,28 +59,6 @@ instance (GSized a, GSized b) => GSized (a :*: b) where
                  firstLongest xs ys = if(length xs >= length ys) 
                                        then True
                                        else False
-
-
-         {-where compose xs ys = diag 0 xs ys False False
-               diag _ [] [] _ _ = []
-               diag i xs ys a b
-                  | a && b = zs ++ diag (i-1) xs' ys' True True
-                  | a && (not b) = if (null(drop (i+1) ys))
-                                    then zs  ++ diag (i-1) xs' ys' True True
-                                    else zs ++ diag i xs ys' True False
-                  | (not a) && b = if (null(drop (i+1) xs))
-                                    then zs ++ diag (i-1) xs' ys' True True
-                                    else zs ++ diag i xs' ys False True
-                  | (not a) && (not b) = if (null(drop (i+1) xs) && null(drop (i+1) ys))
-                                        then zs ++ diag (i-1) xs' ys' True True
-                                        else if (null(drop (i+1) xs) && not(null(drop (i+1) ys)))
-                                                then zs ++ diag i xs ys' True False
-                                                else if (not(null(drop (i+1) xs)) && null(drop (i+1) ys))
-                                                        then zs ++ diag i xs' ys False True
-                                                        else zs ++ diag (i+1) xs ys False False
-                  where xs' = drop 1 xs
-                        ys' = drop 1 ys
-                        zs = [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]]-}
 
 
 -- | Sums: encode choice between constructors
@@ -139,16 +123,3 @@ alltree n = E: map node (compose [0..n] (compose (alltree n) (alltree n)))
 data NTree a = NT a Int [NTree a]
                deriving (Generic, Show)
 instance Sized a => Sized (NTree a) where
-
---New datatypes just for some more testing
-data IntChar = IN Int Char
-              deriving(Generic,Show)
-instance Sized IntChar where
-
-data TripleInt = TrIn Int Int Int
-              deriving(Generic,Show)
-instance Sized TripleInt where
-
-data CharOrInt = Char Char | Int Int
-              deriving(Generic,Show)
-instance Sized CharOrInt where
