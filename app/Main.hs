@@ -72,24 +72,6 @@ instance (GSized f) => GSized (M1 i c f) where
   gsize (M1 x) = gsize x
   gall         = map M1 gall
 
--- | Parameter occurrences for kind *->* count as 1
---instance  GSized Par1 where
---  gsize (Par1 x) = 1
-
--- | Recursion over values of type (f a) for f: *->*
---instance (Sized f) => GSized (Rec1 f) where
---  gsize (Rec1 x) = size x
-
--- | Parameter occurrences for kind *
--- instance Sized a => GSized (K1 P a) where
---   gsize (K1 x) = 1
---   gall         = map K1 allv
-
--- | Recursion of kind *
--- instance Sized a => GSized (K1 R a) where
---    gsize (K1 x) = size x
---    gall         = map K1 allv
-
 -- | Constants, additional parameters and recursion of kind *
 instance Sized a => GSized (K1 i a) where
   gsize (K1 x) = size x

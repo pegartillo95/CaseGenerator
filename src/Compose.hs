@@ -38,14 +38,14 @@ instance Ord a => Ord (QElem a b) where
 -- The nice thing is that it works for two infinite input lists
 -----------------------------------------------------------------------------------------
 
-compose :: (Num a, Ord a, Show a) => [a] -> [a] -> [(a,(Int,Int),(a,a))]
+compose :: (Num a, Ord a) => [a] -> [a] -> [(a,(Int,Int),(a,a))]
 
 compose xs ys = reorder lattice (S.singleton (0,0)) (Q.singleton e)
 
   where e:lattice = concat $ diags 0 0 0 xs ys       
 
 
-reorder :: (Show a,Show b,Ord a) => 
+reorder :: (Ord a) => 
            [QElem a b] -> S.Set (Int,Int) -> Q.MinQueue (QElem a b) 
                        -> [(a,(Int,Int),b)]
 reorder [] _   queue = map (\(QE (s,p,v)) -> (s,p,v)) $ Q.toList queue
@@ -58,7 +58,7 @@ reorder xs set queue = (s,(i,j),v) : reorder xs3 s3 q3
         (s3,q3,xs3)    = update (i+1,j) s2 q2 xs2
 
 
-update :: (Show a,Show b,Ord a) => 
+update :: (Ord a) => 
           (Int,Int) -> S.Set (Int,Int) -> Q.MinQueue (QElem a b) -> 
           [QElem a b] -> (S.Set (Int,Int), Q.MinQueue (QElem a b), [QElem a b])
 
@@ -78,8 +78,7 @@ update (i,j) set q xs = case (i,j) `S.member` set of
 -- the tuple looked for is found, then Nothing is returned
 --
 
-remove :: (Show a, Show b) => 
-          (Int,Int) -> [QElem a b] -> (Maybe (QElem a b), [QElem a b])
+remove ::(Int,Int) -> [QElem a b] -> (Maybe (QElem a b), [QElem a b])
 
 remove p [] = error ("Tuple "++ show p ++ " not in list")
 remove p@(i,j) (x@(QE (s,p'@(i',j'),v)) : xs) 
@@ -97,14 +96,9 @@ remove p@(i,j) (x@(QE (s,p'@(i',j'),v)) : xs)
 --
 -- It builds the lattice of tuples from two lists, each one may be either
 -- finite or infinite
---
 
---compon  :: (Num a, Ord a, Show a) => [a] -> [a] -> [QElem a (a,a)]
---compon xs ys = concat $ diags 0 0 0 xs ys
-
-
-diags :: (Num a, Ord a, Show a) => 
-         Int -> Int -> Int -> [a] -> [b] -> [[QElem a (a:*:b)]]
+diags :: (Num a) => 
+         Int -> Int -> Int -> [a] -> [a] -> [[QElem a (a,a)]]
 
 diags _ _  _  [] [] = [[]]
 diags i dx dy xs ys
@@ -122,7 +116,6 @@ diags i dx dy xs ys
         fullDiag     = not (null xs') && not (null ys')
         finiteFirst  = null xs' && not (null ys')
         finiteSecond = not (null xs') && null ys'
-        tup k        = (x+y, (k+dx, i-k+dy), (x :*: y))
+        tup k        = (x+y, (k+dx, i-k+dy), (x,y))
                        where x = xs !! k 
                              y = ys !! (i-k)
-
