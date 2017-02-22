@@ -2,21 +2,22 @@ name:                case-generator
 version:             0.1.0.0
 -- synopsis:
 -- description:
-homepage:            https://github.com/githubuser/case-generator#readme
+homepage:            https://github.com/pegartillo95/CaseGenerator
 license:             BSD3
 license-file:        LICENSE
-author:              Author name here
+author:              Pedro García Castillo
 maintainer:          example@example.com
-copyright:           2017 Author name here
-category:            Web
+copyright:           2017 Pedro García Castillo
+category:            CAVI-ART
 build-type:          Simple
-extra-source-files:  README.md
+--extra-source-files:  README.md
 cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
   exposed-modules:     Lib
   build-depends:       base >= 4.7 && < 5
+                       , pqueue >= 1.3.1
   default-language:    Haskell2010
 
 executable case-generator-exe
@@ -38,4 +39,4 @@ test-suite case-generator-test
 
 source-repository head
   type:     git
-  location: https://github.com/githubuser/case-generator
+  location: https://github.com/pegartillo95/CaseGenerator
