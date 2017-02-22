@@ -99,8 +99,8 @@ remove p@(i,j) (x@(QE (s,p'@(i',j'),v)) : xs)
 -- finite or infinite
 --
 
-compon  :: (Num a, Ord a, Show a) => [a] -> [a] -> [QElem a (a,a)]
-compon xs ys = concat $ diags 0 0 0 xs ys
+--compon  :: (Num a, Ord a, Show a) => [a] -> [a] -> [QElem a (a,a)]
+--compon xs ys = concat $ diags 0 0 0 xs ys
 
 
 diags :: (Num a, Ord a, Show a) => 
@@ -125,22 +125,4 @@ diags i dx dy xs ys
         tup k        = (x+y, (k+dx, i-k+dy), (x :*: y))
                        where x = xs !! k 
                              y = ys !! (i-k)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
