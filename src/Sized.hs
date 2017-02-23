@@ -34,7 +34,7 @@ instance GSized U1 where
 instance (GSized a, GSized b) => GSized (a :*: b) where
   gsize (x :*: y) = gsize x + gsize y
   gall = compose gall gall
-           where compose xs ys = concat [diag i xs ys | i <- [0..]]
+           {-where compose xs ys = concat [diag i xs ys | i <- [0..]]
                  diag i xs ys = if(null(drop i xs)) 
                                    then if(null(drop i ys))
                                            then if(firstLongest xs ys)
@@ -51,7 +51,7 @@ instance (GSized a, GSized b) => GSized (a :*: b) where
                  
                  firstLongest xs ys = if(length xs >= length ys) 
                                        then True
-                                       else False
+                                       else False-}
 
 
 -- | Sums: encode choice between constructors
@@ -139,7 +139,7 @@ instance Ord a => Ord (QElem a b) where
 --compose :: (Num a, Ord a) => [f p] -> [g p] -> [a,(Int,Int),((:*:) f g p))]
 
 
---compose :: (Num a, Ord a) => [a] -> [a] -> [(a,(Int,Int),(a,a))]
+--compose ::(Num a, Ord a) => [a] -> [a] -> [(a,a)]
 compose xs ys = reorder lattice (S.singleton (0,0)) (Q.singleton e)
 
   where e:lattice = concat $ diags 0 0 0 xs ys       
@@ -147,9 +147,9 @@ compose xs ys = reorder lattice (S.singleton (0,0)) (Q.singleton e)
 
 reorder :: (Ord a) => 
            [QElem a b] -> S.Set (Int,Int) -> Q.MinQueue (QElem a b) 
-                       -> [(a,(Int,Int),b)]
-reorder [] _   queue = map (\(QE (s,p,v)) -> (s,p,v)) $ Q.toList queue
-reorder xs set queue = (s,(i,j),v) : reorder xs3 s3 q3
+                       -> [b]
+reorder [] _   queue = map (\(QE (s,p,v)) -> v) $ Q.toList queue
+reorder xs set queue = v : reorder xs3 s3 q3
 
   where QE (s,(i,j),v) = Q.findMin queue
         queue'         = Q.deleteMin queue
@@ -201,7 +201,7 @@ remove p@(i,j) (x@(QE (s,p'@(i',j'),v)) : xs)
 --diags :: Num a => Int -> Int -> Int -> [f p] -> [g p] -> [[QElem a ((:*:) f g p)]]
 
 
---diags :: Int -> Int -> Int -> [a] -> [b] -> [[QElem c (a:*:b)]]
+--diags ::(Num a) => Int -> Int -> Int -> [a] -> [a] -> [[QElem a (a,a)]]
 diags _ _  _  [] [] = [[]]
 diags i dx dy xs ys
     | fullDiag     = [QE (tup k) | k <- [0..i]] : diags (i+1) dx dy xs ys
@@ -218,6 +218,6 @@ diags i dx dy xs ys
         fullDiag     = not (null xs') && not (null ys')
         finiteFirst  = null xs' && not (null ys')
         finiteSecond = not (null xs') && null ys'
-        tup k        = ((size x)+(size y), (k+dx, i-k+dy), x:*:y)
+        tup k        = ((gsize x)+(gsize y), (k+dx, i-k+dy), x:*:y)
                        where x = xs !! k 
                              y = ys !! (i-k)
