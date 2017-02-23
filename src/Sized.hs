@@ -3,13 +3,16 @@
 module Sized
     ( Sized(..)
       ,Tree(..)
+--      , alltree
+      , compose
+      , diags
+      , Color
     ) where
 
 import GHC.Generics
 import qualified Data.Set as S
 import qualified Data.PQueue.Min as Q
 import System.IO.Unsafe (unsafePerformIO)
-
 
 
 -- | This is the exported, visible class
@@ -35,7 +38,6 @@ instance GSized U1 where
 instance (GSized a, GSized b) => GSized (a :*: b) where
   gsize (x :*: y) = gsize x + gsize y
   gall = compose gall gall
-
 
 -- | Sums: encode choice between constructors
 instance (GSized a, GSized b) => GSized (a :+: b) where
@@ -65,12 +67,13 @@ instance Sized Char where
 instance Sized a => Sized [a] where
 
 
---------------------------------ejemplos-------------------------------------------
+-------------------------------- examples -------------------------------------------
 
 
 data Tree a = E | N a (Tree a) (Tree a)
               deriving (Generic, Show)
 instance Sized a => Sized (Tree a) where
+
 
 alltree :: Int -> [Tree Int]
 alltree n = E: map node (compose [0..n] (compose (alltree n) (alltree n)))
@@ -78,9 +81,17 @@ alltree n = E: map node (compose [0..n] (compose (alltree n) (alltree n)))
                   diag i xs ys  = [((xs !! k) , (ys !! (i-k))) | k <- [0..i]]
                   node (i,(t1,t2))  = N i t1 t2
 
+
 data NTree a = NT a Int [NTree a]
                deriving (Generic, Show)
 instance Sized a => Sized (NTree a) where
+
+
+data Color = R | G | C Int Color
+             deriving (Generic, Show)
+instance Sized Color where
+
+
 
 -----------------------------------------------------------------------------------
 ------------------------compose of 2 lists-----------------------------------------
@@ -116,22 +127,26 @@ instance Ord a => Ord (QElem a b) where
 -- The nice thing is that it works for two infinite input lists
 -----------------------------------------------------------------------------------------
 
---compose ::(Num a, Ord a) => [a] -> [a] -> [(a,a)]
-compose xs ys = concat $ diags 0 0 0 xs ys 
+
+compose ::(GSized f, GSized g) => [f a] -> [g a] -> [(f :*: g) a]
+
+compose xs ys = --reorder lattice (S.singleton (0,0)) (Q.singleton e)
+                map (\(QE (s,p,v)) -> v) (e:lattice)
+  where e:lattice = concat $ diags 0 0 0 xs ys
 
 --
 -- It builds the lattice of tuples from two lists, each one may be either
--- finite or 
---
+-- finite or infinite
 
---diags ::(Num a) => Int -> Int -> Int -> [a] -> [a] -> [[QElem a (a,a)]]
+
+diags :: (GSized f, GSized g) => 
+         Int -> Int -> Int -> [f a] -> [g a] -> [[QElem Int ((f :*: g) a)]]
+
 diags _ _  _  [] [] = [[]]
 diags i dx dy xs ys
-    | fullDiag     = [(tup k) | k <- [0..i]] : diags (i+1) dx dy xs ys
-    | finiteFirst  = --traza "FiniteFirst " i $ 
-                     diags (i-1) dx     (dy+1) xs  ysr
-    | finiteSecond = --traza "FiniteSecond " i $ 
-                     diags (i-1) (dx+1) dy     xsr ys
+    | fullDiag     = [QE (tup k) | k <- [0..i]] : diags (i+1) dx dy xs ys
+    | finiteFirst  = diags (i-1) dx     (dy+1) xs  ysr
+    | finiteSecond = diags (i-1) (dx+1) dy     xsr ys
     | otherwise    = diags (i-2) (dx+1) (dy+1) xsr ysr
 
   where xs'          = drop i xs
@@ -141,10 +156,9 @@ diags i dx dy xs ys
         fullDiag     = not (null xs') && not (null ys')
         finiteFirst  = null xs' && not (null ys')
         finiteSecond = not (null xs') && null ys'
-        tup k        = x:*:y
+        tup k        = (gsize x + gsize y, (k+dx, i-k+dy), x:*:y)
                        where x = xs !! k 
-                             y = ys !! (i-k)
-
+                             y = ys !! (i-k)  
 
 
 {-reorder :: (Ord a) => 
@@ -184,12 +198,9 @@ remove ::(Int,Int) -> [QElem a b] -> (Maybe (QElem a b), [QElem a b])
 
 remove p [] = error ("Tuple "++ show p ++ " not in list")
 remove p@(i,j) (x@(QE (s,p'@(i',j'),v)) : xs) 
-         | p == p'      = --traza "###### found p " p $ 
-                          (Just $ QE (s,p,v), xs)
-         | notExists    = --traza "###### remove: Nothing" p' $ 
-                          (Nothing, x:xs) 
-         | otherwise    = --traza "###### remove: p ########### " p $ 
-                          (z, x : xs')
+         | p == p'      = (Just $ QE (s,p,v), xs)
+         | notExists    = (Nothing, x:xs) 
+         | otherwise    = (z, x : xs')
 
    where (z, xs')  = remove p xs 
          notExists = i'+j' > i+j || (i'+j' == i+j && j' < j) || null xs-}
