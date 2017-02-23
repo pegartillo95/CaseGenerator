@@ -2,6 +2,7 @@
 
 module Sized
     ( Sized(..)
+      ,Tree(..)
     ) where
 
 import GHC.Generics
@@ -73,7 +74,7 @@ instance Sized a => GSized (K1 i a) where
 -- | For basic types we must give the instances
 instance Sized Int where
   size x = 1
-  allv   =[1..100]
+  allv   =[1..5]
 
 instance Sized Char where
   size x = 1
