@@ -35,24 +35,6 @@ instance GSized U1 where
 instance (GSized a, GSized b) => GSized (a :*: b) where
   gsize (x :*: y) = gsize x + gsize y
   gall = compose gall gall
-           {-where compose xs ys = concat [diag i xs ys | i <- [0..]]
-                 diag i xs ys = if(null(drop i xs)) 
-                                   then if(null(drop i ys))
-                                           then if(firstLongest xs ys)
-                                                   then if(i < (length xs))
-                                                         then [(xs !! k) :*: (ys !! (i-k)) | k <- [(i-(length ys)+1)..((length xs)-1)]]
-                                                         else diag (mod i (length xs)) xs ys
-                                                   else if(i < (length ys))
-                                                         then [(xs !! k) :*: (ys !! (i-k)) | k <- [(i-(length ys)+1)..((length xs)-1)]]
-                                                         else diag (mod i (length ys)) xs ys
-                                           else [(xs !! (k-(i-(length xs) + 1))) :*: (ys !! (i-k)) | k <-[(i-(length xs) +1)..i]]
-                                    else if(null(drop i ys))
-                                           then [(xs !! k) :*: (ys !! (i-k)) | k <- [(i-(length ys) +1)..i]]
-                                           else [(xs !! k) :*: (ys !! (i-k)) | k <- [0..i]]
-                 
-                 firstLongest xs ys = if(length xs >= length ys) 
-                                       then True
-                                       else False-}
 
 
 -- | Sums: encode choice between constructors
@@ -100,8 +82,6 @@ data NTree a = NT a Int [NTree a]
                deriving (Generic, Show)
 instance Sized a => Sized (NTree a) where
 
-
-
 -----------------------------------------------------------------------------------
 ------------------------compose of 2 lists-----------------------------------------
 -----------------------------------------------------------------------------------
@@ -136,17 +116,38 @@ instance Ord a => Ord (QElem a b) where
 -- The nice thing is that it works for two infinite input lists
 -----------------------------------------------------------------------------------------
 
-
---compose :: (Num a, Ord a) => [f p] -> [g p] -> [a,(Int,Int),((:*:) f g p))]
-
-
 --compose ::(Num a, Ord a) => [a] -> [a] -> [(a,a)]
-compose xs ys = reorder lattice (S.singleton (0,0)) (Q.singleton e)
+compose xs ys = concat $ diags 0 0 0 xs ys 
 
-  where e:lattice = concat $ diags 0 0 0 xs ys       
+--
+-- It builds the lattice of tuples from two lists, each one may be either
+-- finite or 
+--
+
+--diags ::(Num a) => Int -> Int -> Int -> [a] -> [a] -> [[QElem a (a,a)]]
+diags _ _  _  [] [] = [[]]
+diags i dx dy xs ys
+    | fullDiag     = [(tup k) | k <- [0..i]] : diags (i+1) dx dy xs ys
+    | finiteFirst  = --traza "FiniteFirst " i $ 
+                     diags (i-1) dx     (dy+1) xs  ysr
+    | finiteSecond = --traza "FiniteSecond " i $ 
+                     diags (i-1) (dx+1) dy     xsr ys
+    | otherwise    = diags (i-2) (dx+1) (dy+1) xsr ysr
+
+  where xs'          = drop i xs
+        ys'          = drop i ys
+        xsr          = tail xs
+        ysr          = tail ys
+        fullDiag     = not (null xs') && not (null ys')
+        finiteFirst  = null xs' && not (null ys')
+        finiteSecond = not (null xs') && null ys'
+        tup k        = x:*:y
+                       where x = xs !! k 
+                             y = ys !! (i-k)
 
 
-reorder :: (Ord a) => 
+
+{-reorder :: (Ord a) => 
            [QElem a b] -> S.Set (Int,Int) -> Q.MinQueue (QElem a b) 
                        -> [b]
 reorder [] _   queue = map (\(QE (s,p,v)) -> v) $ Q.toList queue
@@ -191,34 +192,4 @@ remove p@(i,j) (x@(QE (s,p'@(i',j'),v)) : xs)
                           (z, x : xs')
 
    where (z, xs')  = remove p xs 
-         notExists = i'+j' > i+j || (i'+j' == i+j && j' < j) || null xs
-
-
---
--- It builds the lattice of tuples from two lists, each one may be either
--- finite or infinite
-
-
---diags :: Num a => Int -> Int -> Int -> [f p] -> [g p] -> [[QElem a ((:*:) f g p)]]
-
-
---diags ::(Num a) => Int -> Int -> Int -> [a] -> [a] -> [[QElem a (a,a)]]
-diags _ _  _  [] [] = [[]]
-diags i dx dy xs ys
-    | fullDiag     = [QE (tup k) | k <- [0..i]] : diags (i+1) dx dy xs ys
-    | finiteFirst  = --traza "FiniteFirst " i $ 
-                     diags (i-1) dx     (dy+1) xs  ysr
-    | finiteSecond = --traza "FiniteSecond " i $ 
-                     diags (i-1) (dx+1) dy     xsr ys
-    | otherwise    = diags (i-2) (dx+1) (dy+1) xsr ysr
-
-  where xs'          = drop i xs
-        ys'          = drop i ys
-        xsr          = tail xs
-        ysr          = tail ys
-        fullDiag     = not (null xs') && not (null ys')
-        finiteFirst  = null xs' && not (null ys')
-        finiteSecond = not (null xs') && null ys'
-        tup k        = ((gsize x)+(gsize y), (k+dx, i-k+dy), x:*:y)
-                       where x = xs !! k 
-                             y = ys !! (i-k)
+         notExists = i'+j' > i+j || (i'+j' == i+j && j' < j) || null xs-}
