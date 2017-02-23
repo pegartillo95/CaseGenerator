@@ -135,8 +135,11 @@ instance Ord a => Ord (QElem a b) where
 -- The nice thing is that it works for two infinite input lists
 -----------------------------------------------------------------------------------------
 
-compose :: (Num a, Ord a) => [a] -> [a] -> [(a,(Int,Int),(a,a))]
 
+--compose :: (Num a, Ord a) => [f p] -> [g p] -> [a,(Int,Int),((:*:) f g p))]
+
+
+--compose :: (Num a, Ord a) => [a] -> [a] -> [(a,(Int,Int),(a,a))]
 compose xs ys = reorder lattice (S.singleton (0,0)) (Q.singleton e)
 
   where e:lattice = concat $ diags 0 0 0 xs ys       
@@ -194,9 +197,11 @@ remove p@(i,j) (x@(QE (s,p'@(i',j'),v)) : xs)
 -- It builds the lattice of tuples from two lists, each one may be either
 -- finite or infinite
 
-diags :: (Num a) => 
-         Int -> Int -> Int -> [a] -> [a] -> [[QElem a (a,a)]]
 
+--diags :: Num a => Int -> Int -> Int -> [f p] -> [g p] -> [[QElem a ((:*:) f g p)]]
+
+
+--diags :: Int -> Int -> Int -> [a] -> [b] -> [[QElem c (a:*:b)]]
 diags _ _  _  [] [] = [[]]
 diags i dx dy xs ys
     | fullDiag     = [QE (tup k) | k <- [0..i]] : diags (i+1) dx dy xs ys
@@ -213,6 +218,6 @@ diags i dx dy xs ys
         fullDiag     = not (null xs') && not (null ys')
         finiteFirst  = null xs' && not (null ys')
         finiteSecond = not (null xs') && null ys'
-        tup k        = (x+y, (k+dx, i-k+dy), (x,y))
+        tup k        = ((size x)+(size y), (k+dx, i-k+dy), x:*:y)
                        where x = xs !! k 
                              y = ys !! (i-k)
