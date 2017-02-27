@@ -5,15 +5,15 @@ module Arbitrary where
 import GHC.Generics
 
 -- | This is the exported, visible class
---class Arbitrary a where
---	randList :: Int -> [a]
---	default randList :: (Generic a, GArbitrary (Rep a)) => Int -> a
---	randList n = map to (grandList n)
+class Arbitrary a where
+    randList :: Int -> [a]
+    default randList :: (Generic a, GArbitrary (Rep a)) => Int -> [a]
+    randList n = map to (grandList n)
 
 
 -- | This is the generic, non-visible class
---class GArbitrary f where
---	grandList :: Int -> [f a]
+class GArbitrary f where
+    grandList :: Int -> [f a]
 
 -- | Unit: used for constructors without arguments
 --instance GArbitrary U1 where
@@ -24,12 +24,16 @@ import GHC.Generics
 
 
 -- | Sums: encode choice between constructors
---instance (GArbitrary a, GArbitrary b) => GArbitrary (a :+: b) where
+instance (GArbitrary a, GArbitrary b) => GArbitrary (a :+: b) where
+	grandList (L1 x) = grandList x
+	grandList (R1 x) = grandList x
 
 
 -- | Meta-information (constructor names, etc.)
---instance (GArbitrary f) => GArbitrary (M1 i c f) where
+instance (GArbitrary f) => GArbitrary (M1 i c f) where
+	grandList (M1 x) = grandList x
 
 
 -- | Constants, additional parameters and recursion of kind *
---instance Arbitrary a => GArbitrary (K1 i a) where
+instance Arbitrary a => GArbitrary (K1 i a) where
+	grandList (K1 x) = grandList x
