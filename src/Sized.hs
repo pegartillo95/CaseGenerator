@@ -17,6 +17,14 @@ import System.IO.Unsafe (unsafePerformIO)
 
 -- | This is the exported, visible class
 class Sized a where
+  -- This function returns the first n elements of size m from the "allv" list
+  sized::Int->Int->[a]
+  sized n m = take n (filter (\x-> (size x) == m) allv)
+
+  --This function takes an integer n and returns the n first elements of the "allv" list
+  smallest::Int->[a]
+  smallest n = take n allv
+
   size ::  a -> Int
   allv :: [a]
   default size :: (Generic a, GSized (Rep a)) => a -> Int
