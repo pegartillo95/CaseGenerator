@@ -24,16 +24,29 @@ class GArbitrary f where
 
 
 -- | Sums: encode choice between constructors
-instance (GArbitrary a, GArbitrary b) => GArbitrary (a :+: b) where
-	grandList (L1 x) = grandList x
-	grandList (R1 x) = grandList x
+--instance (GArbitrary a, GArbitrary b) => GArbitrary (a :+: b) where
 
 
 -- | Meta-information (constructor names, etc.)
-instance (GArbitrary f) => GArbitrary (M1 i c f) where
-	grandList (M1 x) = grandList x
+--instance (GArbitrary f) => GArbitrary (M1 i c f) where
 
 
 -- | Constants, additional parameters and recursion of kind *
-instance Arbitrary a => GArbitrary (K1 i a) where
-	grandList (K1 x) = grandList x
+--instance Arbitrary a => GArbitrary (K1 i a) where
+
+
+----------------------------------Auxiliary functions--------------------------------------------
+-------------------------------------------------------------------------------------------------
+frequency :: [(Int, Arbitrary a)] -> Arbitrary a
+frequency [] = error "QuickCheck.frequency used with empty list"
+frequency xs0 = choose (1, tot) >>= (`pick` xs0)
+ where
+  tot = sum (map fst xs0)
+
+  pick n ((k,x):xs)
+    | n <= k    = x
+    | otherwise = pick (n-k) xs
+  pick _ _  = error "QuickCheck.pick used with empty list"
+
+--sized :: (Int -> Gen a) -> Gen a
+--sized f = MkGen (\r n -> let MkGen m = f n in m r n)
