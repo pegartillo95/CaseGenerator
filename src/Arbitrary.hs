@@ -37,7 +37,7 @@ class GArbitrary f where
 
 ----------------------------------Auxiliary functions--------------------------------------------
 -------------------------------------------------------------------------------------------------
-frequency :: [(Int, Arbitrary a)] -> Arbitrary a
+{-frequency :: [(Int, Arbitrary a)] -> Arbitrary a
 frequency [] = error "QuickCheck.frequency used with empty list"
 frequency xs0 = choose (1, tot) >>= (`pick` xs0)
  where
@@ -48,5 +48,5 @@ frequency xs0 = choose (1, tot) >>= (`pick` xs0)
     | otherwise = pick (n-k) xs
   pick _ _  = error "QuickCheck.pick used with empty list"
 
---sized :: (Int -> Gen a) -> Gen a
---sized f = MkGen (\r n -> let MkGen m = f n in m r n)
+sized :: (Int -> Gen a) -> Gen a
+sized f = MkGen (\r n -> let MkGen m = f n in m r n)-}
