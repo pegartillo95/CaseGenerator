@@ -7,6 +7,7 @@ module Sized
       , diags
       , Exp
       , List(..)
+      , Tree(..)
     ) where
 
 import GHC.Generics
@@ -45,12 +46,14 @@ instance Allv a => Allv (List a) where
          ++ map f (compose allv allv)
          where f (x,xs) = Cons x xs
 
-{-data Tree a = Empty | Node (Tree a) a (Tree a)
+data Tree a = Empty | Node (Tree a) a (Tree a)
+   deriving (Generic, Show)
+instance Sized a => Sized (Tree a) where
 
 instance Allv a => Allv (Tree a) where
   allv = [Empty]
-         ++ map f compose allv (compose allv allv)
-         where f (t1,(x,t2)) = Node t1 x t2-}  
+         ++ map f (compose allv (compose allv allv))
+         where f (t1,(x,t2)) = Node t1 x t2 
 
 
 
