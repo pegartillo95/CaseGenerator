@@ -1,12 +1,10 @@
 
 
-{-# LANGUAGE DefaultSignatures, DeriveGeneric, TypeOperators, FlexibleContexts #-}
- 
-
 module Main where
 
 import GHC.Generics
 import Sized
+import Prove
 
 -----------------------------------------------------------------------------------
 -- | Programming generic size and generic enumeration of values
