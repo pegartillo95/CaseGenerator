@@ -61,6 +61,7 @@ gen_instance class_name for_type constructors kindOfCons funcs =
 -- Generate the pattern match and function body for a given method and
 -- a given constructor. func_body is a function that generations the
 -- function body
+--gen_clause :: (Constructor -> [ExpQ] -> ExpQ) -> Constructor -> ClauseQ
 --gen_clause func_body data_con@(con_name, components) = 
 gen_clause :: (Constructor -> [ExpQ] -> ExpQ) -> [Constructor] -> [Int] -> ClauseQ
 gen_clause func_body constructors kindOfCons = 
