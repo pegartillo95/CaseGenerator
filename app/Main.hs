@@ -2,9 +2,10 @@
 
 module Main where
 
+import Language.Haskell.TH
 import GHC.Generics
 import Sized
-import Prove
+import TemplateAllv
 
 -----------------------------------------------------------------------------------
 -- | Programming generic size and generic enumeration of values
@@ -13,4 +14,5 @@ import Prove
 
 --Dumb main function
 main :: IO ()
-main = putStrLn "Test suite not yet implemented"
+main = putStrLn $ pprint ($(doE [letS [(gen_allv ''MyExp)]]))
+

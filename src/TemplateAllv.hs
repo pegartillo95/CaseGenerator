@@ -1,30 +1,34 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DefaultSignatures, DeriveGeneric, TypeOperators, FlexibleContexts, TemplateHaskell #-}
 
-module Prove (
-    gen_render
+module TemplateAllv (
+    MyExp(..)
+    , gen_allv
+    , compose
     )where
 
 import Language.Haskell.TH
 import Data.Char
 
+data MyExp = Const Int | Var Char | Sum MyExp MyExp | Prod MyExp MyExp
+
 -- Generate an intance of the class TH_Render for the type typName
-gen_render :: Name -> Q [Dec]
-gen_render typName =
+gen_allv :: Name -> Q Dec
+gen_allv typName =
   do (TyConI d) <- reify typName -- Get all the information on the type
-     (type_name,_,_,constructors) <- typeInfo (return d) -- extract name and constructors                  
-     i_dec <- gen_instance (mkName "TH_Render") (conT type_name) constructors
+     (type_name,_,_,constructors,kindOfCons) <- typeInfo (return d) -- extract name and constructors                  
+     i_dec <- gen_instance (mkName "Allv") (conT type_name) constructors kindOfCons
                       -- generation function for method "render"
-                      [(mkName "render", gen_render)]
-     return [i_dec]  -- return the instance declaration
+                      [(mkName "allv", gen_allv)]
+     return i_dec -- return the instance declaration
              -- function to generation the function body for a particular function
              -- and constructor
-       where gen_render (conName, components) vars 
+       where gen_allv (conName, components) vars 
                  -- function name is based on constructor name  
-               = let funcName = makeName $ unCapalize $ nameBase conName 
+               = let funcName = makeName $ nameBase conName 
                  -- choose the correct builder function
                      headFunc = case vars of
-                                     [] -> "func_out"
-                                     otherwise -> "build" 
+                                     [] -> "no_arg" --Enter when no arguments
+                                     otherwise -> "map" --Enters when the dataType Constructor do have arguments
                       -- build 'funcName parm1 parm2 parm3 ...
                    in appsE $ (varE $ mkName headFunc):funcName:vars -- put it all together
              -- equivalent to 'funcStr where funcStr CONTAINS the name to be returned
@@ -42,28 +46,32 @@ type Funcs = [(Func_name, Gen_func)]
 -- construct an instance of class class_name for type for_type
 -- funcs is a list of instance method names with a corresponding
 -- function to build the method body
-gen_instance :: Name -> TypeQ -> [Constructor] -> Funcs -> DecQ
-gen_instance class_name for_type constructors funcs = 
+gen_instance :: Name -> TypeQ -> [Constructor] -> [Int] -> Funcs -> DecQ
+gen_instance class_name for_type constructors kindOfCons funcs = 
   instanceD (cxt [])
-    (appT (conT class_name) for_type)
+    (appT (conT class_name) for_type) 
     (map func_def funcs) 
       where func_def (func_name, gen_func) 
                 = funD func_name -- method name
                   -- generate function body for each constructor
-                  (map (gen_clause gen_func) constructors)
+                  --(map (gen_clause gen_func) constructors)
+                  [gen_clause gen_func constructors]
 
 
 -- Generate the pattern match and function body for a given method and
 -- a given constructor. func_body is a function that generations the
 -- function body
-gen_clause :: (Constructor -> [ExpQ] -> ExpQ) -> Constructor -> ClauseQ
-gen_clause func_body data_con@(con_name, components) = 
+--gen_clause func_body data_con@(con_name, components) = 
+gen_clause :: (Constructor -> [ExpQ] -> ExpQ) -> [Constructor] -> [Int] -> ClauseQ
+gen_clause func_body constructors kindOfCons = 
       -- create a parameter for each component of the constructor
+   --do vars <- mapM var components
    do vars <- mapM var components
       -- function (unnamed) that pattern matches the constructor 
       -- mapping each component to a value.
-      (clause [(conP con_name (map varP vars))]
-            (normalB (func_body data_con (map varE vars))) [])
+      (clause []
+            (normalB (func_body data_con (map varE vars))) -- This is the function we define in gen_allv
+             []) -- declarations of the type where
        -- create a unique name for each component. 
        where var (_, typ) 
                  = newName 
@@ -75,26 +83,27 @@ gen_clause func_body data_con@(con_name, components) =
 unCapalize :: [Char] -> [Char]
 unCapalize (x:y) = (toLower x):y
 
-typeInfo :: DecQ -> Q (Name, [Name], [(Name, Int)], [(Name, [(Maybe Name, Type)])])
+
+--Extracting information of the of the declaration of the data type-------
+typeInfo :: DecQ -> Q (Name, [Name], [(Name, Int)], [(Name, [(Maybe Name, Type)])],[Int])
 typeInfo m =
      do d <- m
         case d of
            d@(DataD _ _ _ _ _) ->
-            return $ (simpleName $ name d, paramsA d, consA d, termsA d)
+            return $ (simpleName $ name d, paramsA d, consA d, termsA d, typeConsA d)
            d@(NewtypeD _ _ _ _ _) ->
-            return $ (simpleName $ name d, paramsA d, consA d, termsA d)
+            return $ (simpleName $ name d, paramsA d, consA d, termsA d, typeConsA d)
            _ -> error ("derive: not a data type declaration: " ++ show d)
  
      where
         consA (DataD _ _ _ cs _)    = map conA cs
         consA (NewtypeD _ _ _ c _)  = [ conA c ]
+
+        --Here we can see if the constructor is Normal, Recursive or Infix
+        conA (NormalC c xs)         = (simpleName c, length xs)
+        conA (RecC c xs)            = (simpleName c, length xs)
+        conA (InfixC _ c _)         = (simpleName c, 2)
  
-        {- This part no longer works on 7.6.3
-        paramsA (DataD _ _ ps _ _) = ps
-        paramsA (NewtypeD _ _ ps _ _) = ps
-        -}
- 
-        -- Use this on more recent GHC rather than the above
         paramsA (DataD _ _ ps _ _) = map nameFromTyVar ps
         paramsA (NewtypeD _ _ ps _ _) = map nameFromTyVar ps
  
@@ -109,13 +118,16 @@ typeInfo m =
         termA (RecC c xs)           = (c, map (\(n, _, t) -> (Just $ simpleName n, t)) xs)
         termA (InfixC t1 c t2)      = (c, [(Nothing, snd t1), (Nothing, snd t2)])
  
-        conA (NormalC c xs)         = (simpleName c, length xs)
-        conA (RecC c xs)            = (simpleName c, length xs)
-        conA (InfixC _ c _)         = (simpleName c, 2)
- 
         name (DataD _ n _ _ _)      = n
         name (NewtypeD _ n _ _ _)   = n
         name d                      = error $ show d
+
+        typeConsA (DataD _ _ _ cs _)    = map fromIntegral (map tyConA cs)
+        typeConsA (NewtypeD _ _ _ c _)  = map fromIntegral [ tyConA c ]
+
+        tyConA (NormalC _ _)         = 0
+        tyConA (RecC _ _)            = 1
+        tyConA (InfixC _ _ _)         = 2
  
 simpleName :: Name -> Name
 simpleName nm =
@@ -124,3 +136,35 @@ simpleName nm =
         []          -> mkName s
         _:[]        -> mkName s
         _:t         -> mkName t
+
+------------------------------------------
+--------Composing of 2 lists--------------
+------------------------------------------
+
+compose ::[a] -> [b] -> [(a,b)]
+compose xs ys = (e:lattice)
+  where e:lattice = concat $ diags 0 0 0 xs ys
+
+--
+-- It builds the lattice of tuples from two lists, each one may be either
+-- finite or infinite
+
+
+diags :: Int -> Int -> Int -> [a] -> [b] -> [[(a,b)]]
+diags _ _ _ [] [] = [[]]
+diags i dx dy xs ys
+    | fullDiag     = [tup k | k <- [0..i]] : diags (i+1) dx dy xs ys
+    | finiteFirst  = diags (i-1) dx     (dy+1) xs  ysr
+    | finiteSecond = diags (i-1) (dx+1) dy     xsr ys
+    | otherwise    = diags (i-2) (dx+1) (dy+1) xsr ysr
+
+  where xs'          = drop i xs
+        ys'          = drop i ys
+        xsr          = tail xs
+        ysr          = tail ys
+        fullDiag     = not (null xs') && not (null ys')
+        finiteFirst  = null xs' && not (null ys')
+        finiteSecond = not (null xs') && null ys'
+        tup k        = (x,y)
+                       where x = xs !! k 
+                             y = ys !! (i-k)

@@ -3,17 +3,13 @@
 module Sized
     ( Allv(..)
       , Sized(..)
-      , compose
-      , diags
-      , Exp
-      , List(..)
-      , Tree(..)
     ) where
 
 import GHC.Generics
 import qualified Data.Set as S
 import qualified Data.PQueue.Min as Q
 import System.IO.Unsafe (unsafePerformIO)
+import TemplateAllv
 
 --Class Allv and its instances
 class Allv a where
@@ -25,7 +21,7 @@ instance Allv Int where
 instance Allv Char where
   allv = ['a'..'z']
 
-data Exp = Const Int | Var Char | Sum Exp Exp | Prod Exp Exp
+{-data Exp = Const Int | Var Char | Sum Exp Exp | Prod Exp Exp
    deriving (Generic, Show)
 instance Sized Exp where
 
@@ -53,7 +49,7 @@ instance Sized a => Sized (Tree a) where
 instance Allv a => Allv (Tree a) where
   allv = [Empty]
          ++ map f (compose allv (compose allv allv))
-         where f (t1,(x,t2)) = Node t1 x t2 
+         where f (t1,(x,t2)) = Node t1 x t2-}
 
 
 
@@ -129,40 +125,3 @@ instance Eq a => Eq (QElem a b) where
 
 instance Ord a => Ord (QElem a b) where
    QE (x,(i,j),_) <= QE (x',(i',j'),_) = x < x' || (x == x' && i + j <= i' + j')
-
------------------------------------------------------------------------------------------
--- It produces an increasing sorted list from a partially sorted list of values
--- coming from a lattice of pairs which has been traversed by diagonalization of 
--- the cartesian product of two increasing lists and a monotonic operator
---
--- The nice thing is that it works for two infinite input lists
------------------------------------------------------------------------------------------
-
-
-compose ::[a] -> [b] -> [(a,b)]
-compose xs ys = (e:lattice)
-  where e:lattice = concat $ diags 0 0 0 xs ys
-
---
--- It builds the lattice of tuples from two lists, each one may be either
--- finite or infinite
-
-
-diags :: Int -> Int -> Int -> [a] -> [b] -> [[(a,b)]]
-diags _ _ _ [] [] = [[]]
-diags i dx dy xs ys
-    | fullDiag     = [tup k | k <- [0..i]] : diags (i+1) dx dy xs ys
-    | finiteFirst  = diags (i-1) dx     (dy+1) xs  ysr
-    | finiteSecond = diags (i-1) (dx+1) dy     xsr ys
-    | otherwise    = diags (i-2) (dx+1) (dy+1) xsr ysr
-
-  where xs'          = drop i xs
-        ys'          = drop i ys
-        xsr          = tail xs
-        ysr          = tail ys
-        fullDiag     = not (null xs') && not (null ys')
-        finiteFirst  = null xs' && not (null ys')
-        finiteSecond = not (null xs') && null ys'
-        tup k        = (x,y)
-                       where x = xs !! k 
-                             y = ys !! (i-k)  
