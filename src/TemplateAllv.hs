@@ -9,32 +9,46 @@ module TemplateAllv (
 import Language.Haskell.TH
 import Data.Char
 
-data MyExp = Const Int | Var Char | Value Int -- | Sum MyExp MyExp | Prod MyExp MyExp
+data MyExp = Const Int | Prod MyExp MyExp MyExp | Var Char | Sum MyExp MyExp 
 
 -- Generate an intance of the class TH_Render for the type typName
 gen_allv :: Name -> Q Dec
 gen_allv typName =
   do (TyConI d) <- reify typName -- Get all the information on the type
-     (type_name,_,_,constructors,kindOfCons) <- typeInfo (return d) -- extract name and constructors                  
-     i_dec <- gen_instance (mkName "Allv") (conT type_name) constructors kindOfCons
+     (type_name,_,consInfo,constructors,kindOfCons) <- typeInfo (return d) -- extract name and constructors                  
+     i_dec <- gen_instance (mkName "Allv") (conT type_name) consInfo constructors kindOfCons
                       -- generation function for method "render"
                       (mkName "allv", gen_allv)
      return i_dec -- return the instance declaration
              -- function to generation the function body for a particular function
              -- and constructor
-       where gen_allv [] [] = []
-             gen_allv constructors kindOfCons
+       where gen_allv _ [] [] [] = []
+             gen_allv consInfo constructors kindOfCons listOfF
                  -- function name is based on constructor name  
                = let functE string = varE $ mkName string
                      constructorName = functE $ nameBase $ fst $ head constructors
-                     mapFunc = functE "map"
-                     allvFunc = functE "allv"
-                      -- build 'funcName parm1 parm2 parm3 ...
-                      in [appsE (varE '(++):[appsE (mapFunc:constructorName:[(appsE [allvFunc])])] ++ gen_allv (tail constructors) (tail kindOfCons))]-- put it all together
+                     mapFunction = functE "map"
+                     composeFunction = functE "compose"
+                     allvFunction = functE "allv"
+                     secondHead = head . tail
+                     doubleTail = tail . tail
+
+                     {-allvFunc = replicate (snd $ head consInfo) (appsE [functE "allv"])-}
+                     allvFunc 1 = [appsE [allvFunction]]
+                     allvFunc n = [appsE (composeFunction:[allvFunction] ++ allvFunc (n-1))]
+
+                      in if (null $ tail constructors)
+                          then [appsE (mapFunction:constructorName:(allvFunc (snd $ head consInfo)))] ++ (gen_allv (tail consInfo) (tail constructors) (tail kindOfCons) listOfF)
+                          else if((head kindOfCons) == 0)
+                               then [appsE (varE '(++):[appsE (mapFunction:constructorName:(allvFunc (snd $ head consInfo)))] ++ gen_allv (tail consInfo) (tail constructors) (tail kindOfCons) listOfF)]
+                               else if((head $ tail kindOfCons) == 0) 
+                                    then gen_allv ((secondHead consInfo):(head consInfo):(doubleTail consInfo)) ((secondHead constructors):(head constructors):(doubleTail constructors)) ((secondHead kindOfCons):(head kindOfCons):(doubleTail kindOfCons)) listOfF
+                                    else [appsE (varE '(++):[appsE (mapFunction:constructorName:(allvFunc (snd $ head consInfo)))] ++ gen_allv (tail consInfo) (tail constructors) (tail kindOfCons) listOfF)]
+
 
 type Constructor = (Name, [(Maybe Name, Type)]) -- the list of constructors
 type Cons_vars = [ExpQ] -- A list of variables that bind in the constructor
-type Gen_func = [Constructor] -> [Int] -> [ExpQ]
+type Gen_func = [(Name, Int)] -> [Constructor] -> [Int] -> [ExpQ] -> [ExpQ]
 type Func_name = Name   -- The name of the instance function we will be creating
 -- For each function in the instance we provide a generator function
 -- to generate the function body (the body is generated for each constructor)
@@ -44,16 +58,14 @@ type Func = (Func_name, Gen_func)
 -- construct an instance of class class_name for type for_type
 -- funcs is a list of instance method names with a corresponding
 -- function to build the method body
-gen_instance :: Name -> TypeQ -> [Constructor] -> [Int] -> Func -> DecQ
-gen_instance class_name for_type constructors kindOfCons func = 
+gen_instance :: Name -> TypeQ -> [(Name, Int)] -> [Constructor] -> [Int] -> Func -> DecQ
+gen_instance class_name for_type consInfo constructors kindOfCons func = 
   instanceD (cxt [])
     (appT (conT class_name) for_type) 
     [(func_def func)] 
       where func_def (func_name, gen_func) 
                 = funD func_name -- method name
-                  -- generate function body for each constructor
-                  --(map (gen_clause gen_func) constructors)
-                  [gen_clause gen_func constructors kindOfCons]
+                  [gen_clause gen_func consInfo constructors kindOfCons]-- generate function body
 
 
 -- Generate the pattern match and function body for a given method and
@@ -61,26 +73,25 @@ gen_instance class_name for_type constructors kindOfCons func =
 -- function body
 --gen_clause :: (Constructor -> [ExpQ] -> ExpQ) -> Constructor -> ClauseQ
 --gen_clause func_body data_con@(con_name, components) = 
-gen_clause :: ([Constructor] -> [Int] -> [ExpQ]) -> [Constructor] -> [Int] -> ClauseQ
-gen_clause func_body constructors kindOfCons = 
+gen_clause :: Gen_func -> [(Name, Int)] -> [Constructor] -> [Int] -> ClauseQ
+gen_clause func_body consInfo constructors kindOfCons = 
       -- create a parameter for each component of the constructor
    --do vars <- mapM var components
    do 
       -- function (unnamed) that pattern matches the constructor 
       -- mapping each component to a value.
       (clause []
-            (normalB $ head (func_body constructors kindOfCons)) -- This is the function we define in gen_allv
-             []) -- declarations of the type where
-       -- create a unique name for each component. 
-       where var (_, typ) 
-                 = newName 
-                   $ case typ of 
-                     (ConT name) -> toL $ nameBase name
-                     otherwise   -> "parm"
-               where toL (x:y) = (toLower x):y
- 
-unCapalize :: [Char] -> [Char]
-unCapalize (x:y) = (toLower x):y
+            (normalB $ head (func_body consInfo constructors [0,1,0,1] (listOfF (length constructors)) )) -- This is the function we define in gen_allv [0,1,0,1]
+             --[funD (mkName "a") [clause [] (normalB (appsE [varE $ mkName "allv"])) []]]) -- where clause of the function
+             [gen_wheres (map snd consInfo) listOfF])
+      where listOfF 0 = []
+            listOfF n = (varE $ newName "f"):(listOfF (n-1))
+
+            gen_wheres numParam listOfF = (funD (head listOfF) (bodyFunc (head listOfF) (head numParam)))
+
+            bodyFunc f numPar = [clause []]
+
+            --TODO acabar funcion bodyFunc y despues añadir en la parte de arriba el que en vez de usar el constructor si tiene mas de un parametro use dicha funcion.
 
 
 --Extracting information of the of the declaration of the data type-------
@@ -126,7 +137,7 @@ typeInfo m =
 
         tyConA (NormalC _ _)         = 0
         tyConA (RecC _ _)            = 1
-        tyConA (InfixC _ _ _)         = 2
+        tyConA (InfixC _ _ _)        = 2
  
 simpleName :: Name -> Name
 simpleName nm =
@@ -167,3 +178,4 @@ diags i dx dy xs ys
         tup k        = (x,y)
                        where x = xs !! k 
                              y = ys !! (i-k)
+
