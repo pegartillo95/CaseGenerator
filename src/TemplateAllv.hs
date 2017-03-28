@@ -9,7 +9,7 @@ module TemplateAllv (
 import Language.Haskell.TH
 import Data.Char
 
-data MyExp = Const Int  | Prod MyExp MyExp | Var Char | Sum MyExp MyExp
+
 
 -- Generate an intance of the class TH_Render for the type typName
 gen_allv :: Name -> Q Dec
@@ -90,13 +90,13 @@ gen_clause func_body consInfo constructors typesOfCons typeName =
 
             gen_wheres [] [] [] = []
             gen_wheres numParam constructors listOfF = if (head numParam) > 1
-                                                        then (funD (head listOfF) (bodyFunc listOfVar (nameBase $ fst $ head constructors))):gen_wheres (tail numParam) (tail constructors) (tail listOfF)
+                                                        then (funD (head listOfF) (bodyFunc listOfVar (fst $ head constructors))):gen_wheres (tail numParam) (tail constructors) (tail listOfF)
                                                         else gen_wheres (tail numParam) (tail constructors) (tail listOfF)
                   where listOfVar = listVariab (head numParam)
                         listVariab 0 = []
                         listVariab n = (mkName ("x"++ show n)):(listVariab (n-1))
 
-            bodyFunc listOfVar constructorStr = [clause (tupleParam listOfVar) (normalB (appsE ((varE $ mkName constructorStr):(map varE listOfVar)))) []]
+            bodyFunc listOfVar constructorStr = [clause (tupleParam listOfVar) (normalB (appsE ((conE constructorStr):(map varE listOfVar)))) []]
             tupleParam listOfVar = if(null $ tail listOfVar)
                                       then [varP (head listOfVar)]
                                       else [tupP ((varP $ head listOfVar):tupleParam (tail listOfVar))]
@@ -189,4 +189,10 @@ diags i dx dy xs ys
                        where x = xs !! k 
                              y = ys !! (i-k)
 
+data MyExp = Const Int Int  | Prod MyExp MyExp | Var1 Char Char | Sum MyExp MyExp
 
+--TyConI (DataD [] TemplateAllv.MyExp [] 
+--[NormalC TemplateAllv.Const [(NotStrict,ConT GHC.Types.Int),(NotStrict,ConT GHC.Types.Int)],
+--NormalC TemplateAllv.Prod [(NotStrict,ConT TemplateAllv.MyExp),(NotStrict,ConT TemplateAllv.MyExp)],
+--NormalC TemplateAllv.Var1 [(NotStrict,ConT GHC.Types.Char),(NotStrict,ConT GHC.Types.Char)],
+--NormalC TemplateAllv.Sum [(NotStrict,ConT TemplateAllv.MyExp),(NotStrict,ConT TemplateAllv.MyExp)]] [])
