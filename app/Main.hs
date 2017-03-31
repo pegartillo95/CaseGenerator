@@ -14,6 +14,6 @@ import TemplateAllv
 
 --Dumb main function
 main :: IO ()
---main = putStrLn $ pprint ($(doE [letS [(gen_allv ''MyExp)]]))
-main =putStrLn $(stringE . show =<< reify ''Bolean)      
+main = putStrLn $ pprint ($(doE [letS [(gen_allv ''MyExp)]]))
+--main =putStrLn $(stringE . show =<< reify ''Bolean)      
 

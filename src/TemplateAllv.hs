@@ -15,8 +15,8 @@ import Data.Char
 gen_allv :: Name -> Q Dec
 gen_allv typName =
   do (TyConI d) <- reify typName -- Get all the information on the type
-     (type_name,_,consInfo,constructors,typesOfCons) <- typeInfo (return d) -- extract name and constructors                  
-     i_dec <- gen_instance (mkName "Allv") (conT type_name) consInfo constructors typesOfCons type_name
+     (type_name,_,consInfo,constructors,typesOfCons, name_without_simplify) <- typeInfo (return d) -- extract name and constructors                  
+     i_dec <- gen_instance (mkName "Allv") (conT type_name) consInfo constructors typesOfCons name_without_simplify
                       -- generation function for method "render"
                       (mkName "allv", gen_allv)
      return i_dec -- return the instance declaration
@@ -61,32 +61,32 @@ type Func = (Func_name, Gen_func)
 -- funcs is a list of instance method names with a corresponding
 -- function to build the method body
 gen_instance :: Name -> TypeQ -> [(Name, Int)] -> [Constructor] -> [[Type]] -> Name -> Func -> DecQ
-gen_instance class_name for_type consInfo constructors typesOfCons typeName func = 
+gen_instance class_name for_type consInfo constructors typesOfCons typeName_nosimp func = 
   instanceD (cxt [])
     (appT (conT class_name) for_type) 
     [(func_def func)] 
       where func_def (func_name, gen_func) 
                 = funD func_name -- method name
-                  [gen_clause gen_func consInfo constructors typesOfCons typeName]-- generate function body
+                  [gen_clause gen_func consInfo constructors typesOfCons typeName_nosimp]-- generate function body
 
 
 -- Generate the pattern match and function body for a given method and
 -- a given constructor. func_body is a function that generations the
 -- function body
 gen_clause :: Gen_func -> [(Name, Int)] -> [Constructor] -> [[Type]] -> Name -> ClauseQ
-gen_clause func_body consInfo constructors typesOfCons typeName = 
+gen_clause func_body consInfo constructors typesOfCons typeName_nosimp = 
       -- create a parameter for each component of the constructor
    do 
       -- function (unnamed) that pattern matches the constructor 
       -- mapping each component to a value.
       (clause []
-            (normalB $ head (func_body consInfo constructors listOfFOut [False, True, False, True])) -- This is the function we define in gen_allv (isRec typesOfCons)
+            (normalB $ head (func_body consInfo constructors listOfFOut (isRec typesOfCons))) -- This is the function we define in gen_allv
              (gen_wheres (map snd consInfo) constructors listOfFOut))
       where listOfF 0 = []
             listOfF n = (mkName ("f"++ show n)):(listOfF (n-1))
             listOfFOut = listOfF (length constructors)
             isRec [] = []
-            isRec (x:xs) = (or $ map (==(ConT typeName)) x): isRec xs
+            isRec (x:xs) = (or $ map (==(ConT typeName_nosimp)) x): isRec xs
 
             gen_wheres [] [] [] = []
             gen_wheres numParam constructors listOfF = if (head numParam) > 1
@@ -105,14 +105,14 @@ gen_clause func_body consInfo constructors typesOfCons typeName =
 
 
 --Extracting information of the of the declaration of the data type-------
-typeInfo :: DecQ -> Q (Name, [Name], [(Name, Int)], [(Name, [(Maybe Name, Type)])], [[Type]])
+typeInfo :: DecQ -> Q (Name, [Name], [(Name, Int)], [(Name, [(Maybe Name, Type)])], [[Type]], Name)
 typeInfo m =
      do d <- m
         case d of
            d@(DataD _ _ _ _ _) ->
-            return $ (simpleName $ name d, paramsA d, consA d, termsA d, listTypesA d)
+            return $ (simpleName $ name d, paramsA d, consA d, termsA d, listTypesA d, name d)
            d@(NewtypeD _ _ _ _ _) ->
-            return $ (simpleName $ name d, paramsA d, consA d, termsA d, listTypesA d)
+            return $ (simpleName $ name d, paramsA d, consA d, termsA d, listTypesA d, name d)
            _ -> error ("derive: not a data type declaration: " ++ show d)
  
      where
@@ -189,10 +189,10 @@ diags i dx dy xs ys
                        where x = xs !! k 
                              y = ys !! (i-k)
 
-data MyExp = Const Int Int  | Prod MyExp MyExp | Var1 Char Char | Sum MyExp MyExp
+data MyExp = Const Int Int  | Prod MyExp MyExp | Var Char Char | Sum MyExp MyExp
 
 --TyConI (DataD [] TemplateAllv.MyExp [] 
 --[NormalC TemplateAllv.Const [(NotStrict,ConT GHC.Types.Int),(NotStrict,ConT GHC.Types.Int)],
 --NormalC TemplateAllv.Prod [(NotStrict,ConT TemplateAllv.MyExp),(NotStrict,ConT TemplateAllv.MyExp)],
---NormalC TemplateAllv.Var1 [(NotStrict,ConT GHC.Types.Char),(NotStrict,ConT GHC.Types.Char)],
+--NormalC TemplateAllv.Var [(NotStrict,ConT GHC.Types.Char),(NotStrict,ConT GHC.Types.Char)],
 --NormalC TemplateAllv.Sum [(NotStrict,ConT TemplateAllv.MyExp),(NotStrict,ConT TemplateAllv.MyExp)]] [])
