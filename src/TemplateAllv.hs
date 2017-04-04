@@ -22,29 +22,38 @@ gen_allv typName =
              -- and constructor
        where gen_allv _ [] [] [] = []
              gen_allv (i:is) (c:cs) (f:fs) (r:rs) --consInfo constructors listOfF isRecList 
-                | null cs = [appsE (mapFunction:constructorFunc:(allvFunc (snd i)))] ++ (gen_allv is cs fs rs)
-                | not r = [appsE (varE '(++):[appsE (mapFunction:constructorFunc:(allvFunc (snd i)))] ++ gen_allv is cs fs rs)]
+                | null cs = [appsE (mapE:constructorFunc:(allvFunc (snd i)))] ++ (gen_allv is cs fs rs)
+                | not r = [appsE (varE '(++):[appsE (mapE:constructorFunc:(allvFunc (snd i)))] ++ gen_allv is cs fs rs)]
                 | not $ head rs = gen_allv (moveHead (i:is)) (moveHead (c:cs)) (moveHead (f:fs)) (moveHead (r:rs))
-                | otherwise = [appsE (varE '(++):[appsE (mapFunction:constructorFunc:(allvFunc (snd i)))] ++ gen_allv is cs fs rs)]
+                | otherwise = [appsE (varE '(++):[appsE (mapE:constructorFunc:(allvFunc (snd i)))] ++ gen_allv is cs fs rs)]
                       where functE string = varE $ mkName string
                             constructorFunc 
                                 | (snd i) > 1 = varE f
                                 | otherwise = functE $ nameBase $ fst c
-                            mapFunction = functE "map"
-                            composeFunction = functE "compose"
-                            allvFunction = functE "allv"
+                            mapE = functE "map"
+                            composeE = functE "compose"
+                            allvE = functE "allv"
                             moveHead (x1:x2:xs) = x2:x1:xs
 
-                            allvFunc 1 = [appsE [allvFunction]]
-                            allvFunc n = [appsE (composeFunction:[allvFunction] ++ allvFunc (n-1))]
+                            allvFunc 1 = [appsE [allvE]]
+                            allvFunc n = [appsE (composeE:[allvE] ++ allvFunc (n-1))]
 
-type Constructor = (Name, [(Maybe Name, Type)]) -- the list of constructors
-type Cons_vars = [ExpQ] -- A list of variables that bind in the constructor
+
+
+
+------------------------------------------------------------------------------------
+-------------------- Usefull alias for some data types------------------------------
+------------------------------------------------------------------------------------
+
+-- the list of constructors
+type Constructor = (Name, [(Maybe Name, Type)])
+-- A list of variables that bind in the constructor
+type Cons_vars = [ExpQ]
+--The type of the function that generates the body
 type Gen_func = [(Name, Int)] -> [Constructor]  -> [Name] -> [Bool] -> [ExpQ]
-type Func_name = Name   -- The name of the instance function we will be creating
--- For each function in the instance we provide a generator function
--- to generate the function body (the body is generated for each constructor)
-type Funcs = [(Func_name, Gen_func)]
+-- The name of the instance function we will be creating
+type Func_name = Name   
+--Tuple that pairs the func_name and the function to generate the body
 type Func = (Func_name, Gen_func)
 
 -- construct an instance of class class_name for type for_type
@@ -172,9 +181,3 @@ diags i dx dy xs ys
                              y = ys !! (i-k)
 
 data MyExp = Const Int Int  | Prod MyExp MyExp | Var Char Char | Sum MyExp MyExp
-
---TyConI (DataD [] TemplateAllv.MyExp [] 
---[NormalC TemplateAllv.Const [(NotStrict,ConT GHC.Types.Int),(NotStrict,ConT GHC.Types.Int)],
---NormalC TemplateAllv.Prod [(NotStrict,ConT TemplateAllv.MyExp),(NotStrict,ConT TemplateAllv.MyExp)],
---NormalC TemplateAllv.Var [(NotStrict,ConT GHC.Types.Char),(NotStrict,ConT GHC.Types.Char)],
---NormalC TemplateAllv.Sum [(NotStrict,ConT TemplateAllv.MyExp),(NotStrict,ConT TemplateAllv.MyExp)]] [])
