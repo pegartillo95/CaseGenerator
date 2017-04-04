@@ -15,38 +15,28 @@ import Data.Char
 gen_allv :: Name -> Q Dec
 gen_allv typName =
   do (TyConI d) <- reify typName -- Get all the information on the type
-     (type_name,_,consInfo,constructors,typesOfCons, name_without_simplify) <- typeInfo (return d) -- extract name and constructors                  
-     i_dec <- gen_instance (mkName "Allv") (conT type_name) consInfo constructors typesOfCons name_without_simplify
-                      -- generation function for method "render"
-                      (mkName "allv", gen_allv)
+     (type_name,consInfo,constructors,typesOfCons, name_without_simplify) <- typeInfo (return d) -- extract name and constructors                  
+     i_dec <- gen_instance (mkName "Allv") (conT type_name) consInfo constructors typesOfCons name_without_simplify (mkName "allv", gen_allv)
      return i_dec -- return the instance declaration
              -- function to generation the function body for a particular function
              -- and constructor
        where gen_allv _ [] [] [] = []
-             gen_allv consInfo constructors listOfF isRecList
-                 -- function name is based on constructor name  
-               = let functE string = varE $ mkName string
-                     constructorFunc = if ((snd $ head consInfo) > 1)
-                                        then varE $ head listOfF
-                                        else functE $ nameBase $ fst $ head constructors
-                     mapFunction = functE "map"
-                     composeFunction = functE "compose"
-                     allvFunction = functE "allv"
-                     secondHead = head . tail
-                     doubleTail = tail . tail
+             gen_allv (i:is) (c:cs) (f:fs) (r:rs) --consInfo constructors listOfF isRecList 
+                | null cs = [appsE (mapFunction:constructorFunc:(allvFunc (snd i)))] ++ (gen_allv is cs fs rs)
+                | not r = [appsE (varE '(++):[appsE (mapFunction:constructorFunc:(allvFunc (snd i)))] ++ gen_allv is cs fs rs)]
+                | not $ head rs = gen_allv (moveHead (i:is)) (moveHead (c:cs)) (moveHead (f:fs)) (moveHead (r:rs))
+                | otherwise = [appsE (varE '(++):[appsE (mapFunction:constructorFunc:(allvFunc (snd i)))] ++ gen_allv is cs fs rs)]
+                      where functE string = varE $ mkName string
+                            constructorFunc 
+                                | (snd i) > 1 = varE f
+                                | otherwise = functE $ nameBase $ fst c
+                            mapFunction = functE "map"
+                            composeFunction = functE "compose"
+                            allvFunction = functE "allv"
+                            moveHead (x1:x2:xs) = x2:x1:xs
 
-                     {-allvFunc = replicate (snd $ head consInfo) (appsE [functE "allv"])-}
-                     allvFunc 1 = [appsE [allvFunction]]
-                     allvFunc n = [appsE (composeFunction:[allvFunction] ++ allvFunc (n-1))]
-
-                      in if (null $ tail constructors)
-                          then [appsE (mapFunction:constructorFunc:(allvFunc (snd $ head consInfo)))] ++ (gen_allv (tail consInfo) (tail constructors) (tail listOfF) (tail isRecList))
-                          else if(not $ head isRecList)
-                               then [appsE (varE '(++):[appsE (mapFunction:constructorFunc:(allvFunc (snd $ head consInfo)))] ++ gen_allv (tail consInfo) (tail constructors) (tail listOfF) (tail isRecList))]
-                               else if(not $ secondHead isRecList) 
-                                    then gen_allv ((secondHead consInfo):(head consInfo):(doubleTail consInfo)) ((secondHead constructors):(head constructors):(doubleTail constructors)) ((secondHead listOfF):(head listOfF):(doubleTail listOfF)) ((secondHead isRecList):(head isRecList):(doubleTail isRecList))
-                                    else [appsE (varE '(++):[appsE (mapFunction:constructorFunc:(allvFunc (snd $ head consInfo)))] ++ gen_allv (tail consInfo) (tail constructors) (tail listOfF) (tail isRecList))]
-
+                            allvFunc 1 = [appsE [allvFunction]]
+                            allvFunc n = [appsE (composeFunction:[allvFunction] ++ allvFunc (n-1))]
 
 type Constructor = (Name, [(Maybe Name, Type)]) -- the list of constructors
 type Cons_vars = [ExpQ] -- A list of variables that bind in the constructor
@@ -71,48 +61,43 @@ gen_instance class_name for_type consInfo constructors typesOfCons typeName_nosi
 
 
 -- Generate the pattern match and function body for a given method and
--- a given constructor. func_body is a function that generations the
--- function body
+-- a given constructor. gen_func is a function that generates the function body
 gen_clause :: Gen_func -> [(Name, Int)] -> [Constructor] -> [[Type]] -> Name -> ClauseQ
-gen_clause func_body consInfo constructors typesOfCons typeName_nosimp = 
-      -- create a parameter for each component of the constructor
-   do 
-      -- function (unnamed) that pattern matches the constructor 
-      -- mapping each component to a value.
+gen_clause gen_func consInfo constructors typesOfCons typeName_nosimp = 
       (clause []
-            (normalB $ head (func_body consInfo constructors listOfFOut (isRec typesOfCons))) -- This is the function we define in gen_allv
+            (normalB $ head (gen_func consInfo constructors listOfFOut (isRec typesOfCons))) -- This is the function we define in gen_allv
              (gen_wheres (map snd consInfo) constructors listOfFOut))
-      where listOfF 0 = []
+      where listOfFOut = listOfF (length constructors)
+            listOfF 0 = []
             listOfF n = (mkName ("f"++ show n)):(listOfF (n-1))
-            listOfFOut = listOfF (length constructors)
             isRec [] = []
             isRec (x:xs) = (or $ map (==(ConT typeName_nosimp)) x): isRec xs
 
             gen_wheres [] [] [] = []
-            gen_wheres numParam constructors listOfF = if (head numParam) > 1
-                                                        then (funD (head listOfF) (bodyFunc listOfVar (fst $ head constructors))):gen_wheres (tail numParam) (tail constructors) (tail listOfF)
-                                                        else gen_wheres (tail numParam) (tail constructors) (tail listOfF)
-                  where listOfVar = listVariab (head numParam)
+            gen_wheres (n:ns) (c:cs) (f:fs) --numParam constructors listOfF 
+                | n > 1 = funD f (bodyFunc listOfVar (fst c)):gen_wheres ns cs fs
+                | otherwise = gen_wheres ns cs fs
+                  where listOfVar = listVariab n
                         listVariab 0 = []
                         listVariab n = (mkName ("x"++ show n)):(listVariab (n-1))
 
             bodyFunc listOfVar constructorStr = [clause (tupleParam listOfVar) (normalB (appsE ((conE constructorStr):(map varE listOfVar)))) []]
-            tupleParam listOfVar = if(null $ tail listOfVar)
-                                      then [varP (head listOfVar)]
-                                      else [tupP ((varP $ head listOfVar):tupleParam (tail listOfVar))]
+            tupleParam (v:vs) --listVars
+                | (null vs) = [varP v]
+                | otherwise = [tupP ((varP v):tupleParam vs)]
 
             --TODO arreglar saber cuales son recursivas
 
 
 --Extracting information of the of the declaration of the data type-------
-typeInfo :: DecQ -> Q (Name, [Name], [(Name, Int)], [(Name, [(Maybe Name, Type)])], [[Type]], Name)
+typeInfo :: DecQ -> Q (Name, [(Name, Int)], [(Name, [(Maybe Name, Type)])], [[Type]], Name)
 typeInfo m =
      do d <- m
         case d of
            d@(DataD _ _ _ _ _) ->
-            return $ (simpleName $ name d, paramsA d, consA d, termsA d, listTypesA d, name d)
+            return $ (simpleName $ name d, consA d, termsA d, listTypesA d, name d)
            d@(NewtypeD _ _ _ _ _) ->
-            return $ (simpleName $ name d, paramsA d, consA d, termsA d, listTypesA d, name d)
+            return $ (simpleName $ name d, consA d, termsA d, listTypesA d, name d)
            _ -> error ("derive: not a data type declaration: " ++ show d)
  
      where
@@ -123,9 +108,6 @@ typeInfo m =
         conA (NormalC c xs)         = (simpleName c, length xs)
         conA (RecC c xs)            = (simpleName c, length xs)
         conA (InfixC _ c _)         = (simpleName c, 2)
- 
-        paramsA (DataD _ _ ps _ _) = map nameFromTyVar ps
-        paramsA (NewtypeD _ _ ps _ _) = map nameFromTyVar ps
  
         nameFromTyVar (PlainTV a) = a
         nameFromTyVar (KindedTV a _) = a
