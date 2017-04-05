@@ -26,17 +26,22 @@ type Func_name = Name
 --Tuple that pairs the func_name and the function to generate the body
 type Func = (Func_name, Gen_func)
 
--- Generate an intance of the class TH_Render for the type typName
+-- Generate an intance of the class Allv for the type typName
 gen_allv :: Name -> Q Dec
 gen_allv typName =
   do (TyConI d) <- reify typName
       --Extract all the type info of the data type 
-     (t_name,cInfo,consts,typesCons, noSimplifiedName) <- typeInfo (return d)                
+     (t_name,cInfo,consts,typesCons, noSimplifiedName) <- typeInfo (return d)
+     --We call to gen_instance with a name for the class, the name of the constructor,
+     --a list of info of the constructors, the constructors itself, lists containing
+     --the constructors, name of the data-type without being simplified, and lastly
+     --the function to generate the body of the function of the class.            
      i_dec <- gen_instance (mkName "Allv") (conT t_name) cInfo consts
                             typesCons noSimplifiedName (mkName "allv", gen_allv)
      return i_dec -- return the instance declaration
-             -- function to generation the function body for a particular function
-             -- and constructor
+            -- gen_allv is the function that we pass as an argument to gen_instance
+            --and later on is used to generate the body of the allv function 
+            --for a determined data-type
        where gen_allv _ [] [] [] = []
              gen_allv (i:is) (c:cs) (f:fs) (r:rs) --cInfo consts listOfF isRecList 
                 | null cs = [appsE (mapE:constructorF:(allvFunc (snd i)))] ++
@@ -47,64 +52,80 @@ gen_allv typName =
                                     (moveHead (f:fs)) (moveHead (r:rs))
                 | otherwise = [appsE (varE '(++):[appsE (mapE:constructorF:
                                 (allvFunc (snd i)))] ++ gen_allv is cs fs rs)]
-                      where functE string = varE $ mkName string
+                      where --constructorF decided to use the data constructor
+                            --if having just one parameter or to use a function if
+                            --having more than one. This is duo to the fact that
+                            --if the data constructor has more than one parameter
+                            --we need to apply compose to them and then apply a
+                            --function over the result of compose.
                             constructorF 
                                 | (snd i) > 1 = varE f
                                 | otherwise = functE $ nameBase $ fst c
+                            --mapE, composeE and allvE are three auxiliar function
+                            --that serve to get the expresion equivalent to those 3
+                            --functions in template haskell
                             mapE = functE "map"
                             composeE = functE "compose"
                             allvE = functE "allv"
+                            functE string = varE $ mkName string
                             moveHead (x1:x2:xs) = x2:x1:xs
 
                             allvFunc 1 = [appsE [allvE]]
                             allvFunc n = [appsE (composeE:[allvE] ++ allvFunc (n-1))]
 
---TODO a partir de aqui.
 
--- construct an instance of class class_name for type for_type
--- funcs is a list of instance method names with a corresponding
--- function to build the method body
+--Construct an instance of class class_name for type for_type
+--with a corresponding function  to build the method body
 gen_instance :: Name -> TypeQ -> [(Name, Int)] -> [Constructor]
                   -> [[Type]] -> Name -> Func -> DecQ
 gen_instance class_name for_type cInfo consts typesCons typeName_nosimp func =
   instanceD (cxt [])
     (appT (conT class_name) for_type) 
     [(func_def func)] 
-      where func_def (func_name, gen_func) 
+      where func_def (func_name, gen_func)-- extracts func_name and gen_func
                 = funD func_name -- method name
                   -- generate function body
                   [gen_clause gen_func cInfo consts typesCons typeName_nosimp]
 
 
 -- Generate the pattern match and function body for a given method and
--- a given constructor. gen_func is a function that generates the function body
+-- a given data-type. gen_func is the function that generates the function body
 gen_clause :: Gen_func -> [(Name, Int)] -> [Constructor] -> [[Type]] -> Name -> ClauseQ
 gen_clause gen_func cInfo consts typesCons typeName_nosimp = 
       (clause []
-            (normalB $ head (gen_func cInfo consts listOfFOut (isRec typesCons))) 
+             --here we execute the gen_function to generate the body of the function
+            (normalB $ head (gen_func cInfo consts listOfFOut (isRec typesCons)))
+             --this other one generates the where clause of the function
              (gen_wheres (map snd cInfo) consts listOfFOut))
-      where listOfFOut = listOfF (length consts)
+      where --listOfFOut generates a fresh list of "Name" for n different f's
+            --this f's are used when one of the data types has more than one
+            --parameter 
+            listOfFOut = listOfF (length consts)
             listOfF 0 = []
             listOfF n = (mkName ("f"++ show n)):(listOfF (n-1))
+            --isRec checks which of the constructors of the given data-type
+            --are recursive and which others are not. It returns a boolean list
+            --where true means to be recursive and false to not to be recursive.
             isRec [] = []
             isRec (x:xs) = (or $ map (==(ConT typeName_nosimp)) x): isRec xs
 
+            --gen_wheres is the auxiliar function that generates the where "clause"
+            --of the function when necesary.
             gen_wheres [] [] [] = []
-            gen_wheres (n:ns) (c:cs) (f:fs) --numParam consts listOfF 
+            gen_wheres (n:ns) (c:cs) (f:fs) --gen_wheres numParam consts listOfF 
                 | n > 1 = funD f (bodyFunc listOfVar (fst c)):gen_wheres ns cs fs
                 | otherwise = gen_wheres ns cs fs
                   where listOfVar = listVariab n
                         listVariab 0 = []
                         listVariab n = (mkName ("x"++ show n)):(listVariab (n-1))
-
+            --generates the body for the functions in the where clause when necessary.
             bodyFunc listOfVar constructorStr = [clause (tupleParam listOfVar)
                                                   (normalB (appsE ((conE constructorStr):
                                                     (map varE listOfVar)))) []]
-            tupleParam (v:vs) --listVars
+
+            tupleParam (v:vs) --tupleParam listVars
                 | (null vs) = [varP v]
                 | otherwise = [tupP ((varP v):tupleParam vs)]
-
-            --TODO arreglar saber cuales son recursivas
 
 
 --Extracting information of the of the declaration of the data type-------
@@ -122,7 +143,6 @@ typeInfo m =
         consA (DataD _ _ _ cs _)    = map conA cs
         consA (NewtypeD _ _ _ c _)  = [ conA c ]
 
-        --Here we can see if the constructor is Normal, Recursive or Infix
         conA (NormalC c xs)         = (simpleName c, length xs)
         conA (RecC c xs)            = (simpleName c, length xs)
         conA (InfixC _ c _)         = (simpleName c, 2)
