@@ -31,27 +31,28 @@ gen_allv :: Name -> Q Dec
 gen_allv typName =
   do (TyConI d) <- reify typName
       --Extract all the type info of the data type 
-     (t_name,cInfo,consts,typesCons, noSimplifiedName) <- typeInfo (return d)
+     (t_name,noSimplifiedName,cInfo,consts,typesCons) <- typeInfo (return d)
      --We call to gen_instance with a name for the class, the name of the constructor,
      --a list of info of the constructors, the constructors itself, lists containing
      --the constructors, name of the data-type without being simplified, and lastly
      --the function to generate the body of the function of the class.            
      i_dec <- gen_instance (mkName "Allv") (conT t_name) cInfo consts
-                            typesCons noSimplifiedName (mkName "allv", gen_allv)
+                            typesCons noSimplifiedName (mkName "allv", gen_body)
      return i_dec -- return the instance declaration
-            -- gen_allv is the function that we pass as an argument to gen_instance
+            -- gen_body is the function that we pass as an argument to gen_instance
             --and later on is used to generate the body of the allv function 
             --for a determined data-type
-       where gen_allv _ [] [] [] = []
-             gen_allv (i:is) (c:cs) (f:fs) (r:rs) --cInfo consts listOfF isRecList 
+       where gen_body :: [(Name, Int)] -> [Constructor]  -> [Name] -> [Bool] -> [ExpQ]
+             gen_body _ [] [] [] = []
+             gen_body (i:is) (c:cs) (f:fs) (r:rs) --cInfo consts listOfF isRecList 
                 | null cs = [appsE (mapE:constructorF:(allvFunc (snd i)))] ++
-                              (gen_allv is cs fs rs)
+                              (gen_body is cs fs rs)
                 | not r = [appsE (varE '(++):[appsE (mapE:constructorF:
-                            (allvFunc (snd i)))] ++ gen_allv is cs fs rs)]
-                | not $ head rs = gen_allv (moveHead (i:is)) (moveHead (c:cs))
+                            (allvFunc (snd i)))] ++ gen_body is cs fs rs)]
+                | not $ head rs = gen_body (moveHead (i:is)) (moveHead (c:cs))
                                     (moveHead (f:fs)) (moveHead (r:rs))
                 | otherwise = [appsE (varE '(++):[appsE (mapE:constructorF:
-                                (allvFunc (snd i)))] ++ gen_allv is cs fs rs)]
+                                (allvFunc (snd i)))] ++ gen_body is cs fs rs)]
                       where --constructorF decided to use the data constructor
                             --if having just one parameter or to use a function if
                             --having more than one. This is duo to the fact that
@@ -128,15 +129,23 @@ gen_clause gen_func cInfo consts typesCons typeName_nosimp =
                 | otherwise = [tupP ((varP v):tupleParam vs)]
 
 
---Extracting information of the of the declaration of the data type-------
-typeInfo :: DecQ -> Q (Name,[(Name, Int)],[(Name, [(Maybe Name, Type)])],[[Type]], Name)
+--Extracting information of the of the declaration of the data type, these are:
+--  > The name of the type simplified (without the module name)
+--  > The name of the type without being simplified
+--  > A list of tuples one for each constructor having the name and the number
+--      of arguments of each of them.
+--  > A list of a tuple having the name of the type constructor and a list of maybe
+--      the data constructor and the type of its parameters. 
+--  > List of lists each of the inner list having the types of the parameters of
+--      data constructor.
+typeInfo :: DecQ -> Q (Name, Name,[(Name, Int)],[(Name, [(Maybe Name, Type)])],[[Type]])
 typeInfo m =
      do d <- m
         case d of
            d@(DataD _ _ _ _ _) ->
-            return $ (simpleName $ name d, consA d, termsA d, listTypesA d, name d)
+            return $ (simpleName $ name d, name d , consA d, termsA d, listTypesA d)
            d@(NewtypeD _ _ _ _ _) ->
-            return $ (simpleName $ name d, consA d, termsA d, listTypesA d, name d)
+            return $ (simpleName $ name d, name d , consA d, termsA d, listTypesA d)
            _ -> error ("derive: not a data type declaration: " ++ show d)
  
      where
