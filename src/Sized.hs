@@ -9,7 +9,6 @@ import GHC.Generics
 import qualified Data.Set as S
 import qualified Data.PQueue.Min as Q
 import System.IO.Unsafe (unsafePerformIO)
-import TemplateAllv
 
 --Class Allv and its instances
 class Allv a where

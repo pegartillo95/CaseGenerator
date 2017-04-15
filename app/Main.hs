@@ -6,6 +6,7 @@ import Language.Haskell.TH
 import GHC.Generics
 import Sized
 import TemplateAllv
+import TemplateArbitrary
 
 -----------------------------------------------------------------------------------
 -- | Programming generic size and generic enumeration of values
@@ -14,6 +15,6 @@ import TemplateAllv
 
 --Dumb main function
 main :: IO ()
-main = putStrLn $ pprint ($(doE [letS [(gen_allv ''MyExp)]]))
---main =putStrLn $(stringE . show =<< reify ''Bolean)      
+main = putStrLn $ pprint ($(doE [letS [(gen_arbitrary ''MyExp)]]))
+--main =putStrLn $(stringE . show =<< reify ''MyExp)      
 

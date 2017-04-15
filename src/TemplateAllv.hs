@@ -1,14 +1,18 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module TemplateAllv (
-    MyExp(..)
-    , gen_allv
+     gen_allv
     , compose
     )where
 
 import Language.Haskell.TH
 import Data.Char
+import Sized
 
+------------------------------------------------------------------------------------
+----------------------------- Defined data types --------------------------------------
+------------------------------------------------------------------------------------
+data MyExp = Const Int Int  | Prod MyExp MyExp | Var Char Char | Sum MyExp MyExp
 
 
 ------------------------------------------------------------------------------------
@@ -49,8 +53,6 @@ gen_allv typName =
                               (gen_body is cs fs rs)
                 | not r = [appsE (varE '(++):[appsE (mapE:constructorF:
                             (allvFunc (snd i)))] ++ gen_body is cs fs rs)]
-                | not $ head rs = gen_body (moveHead (i:is)) (moveHead (c:cs))
-                                    (moveHead (f:fs)) (moveHead (r:rs))
                 | otherwise = [appsE (varE '(++):[appsE (mapE:constructorF:
                                 (allvFunc (snd i)))] ++ gen_body is cs fs rs)]
                       where --constructorF decided to use the data constructor
@@ -61,14 +63,13 @@ gen_allv typName =
                             --function over the result of compose.
                             constructorF 
                                 | (snd i) > 1 = varE f
-                                | otherwise = functE $ nameBase $ fst c
+                                | otherwise = conE $ fst c
                             --mapE, composeE and allvE are three auxiliar function
                             --that serve to get the expresion equivalent to those 3
                             --functions in template haskell
-                            mapE = functE "map"
-                            composeE = functE "compose"
-                            allvE = functE "allv"
-                            functE string = varE $ mkName string
+                            mapE = varE 'map
+                            composeE = varE 'compose
+                            allvE = varE 'allv
                             moveHead (x1:x2:xs) = x2:x1:xs
 
                             allvFunc 1 = [appsE [allvE]]
@@ -95,9 +96,9 @@ gen_clause :: Gen_func -> [(Name, Int)] -> [Constructor] -> [[Type]] -> Name -> 
 gen_clause gen_func cInfo consts typesCons typeName_nosimp = 
       (clause []
              --here we execute the gen_function to generate the body of the function
-            (normalB $ head (gen_func cInfo consts listOfFOut (isRec typesCons)))
+            (normalB $ head (gen_func cInfoOrd constsOrd listOfFOutOrd isRecOrd))
              --this other one generates the where clause of the function
-             (gen_wheres (map snd cInfo) consts listOfFOut))
+             (gen_wheres (map snd cInfoOrd) constsOrd listOfFOutOrd))
       where --listOfFOut generates a fresh list of "Name" for n different f's
             --this f's are used when one of the data types has more than one
             --parameter 
@@ -107,8 +108,32 @@ gen_clause gen_func cInfo consts typesCons typeName_nosimp =
             --isRec checks which of the constructors of the given data-type
             --are recursive and which others are not. It returns a boolean list
             --where true means to be recursive and false to not to be recursive.
-            isRec [] = []
-            isRec (x:xs) = (or $ map (==(ConT typeName_nosimp)) x): isRec xs
+            isRec = isRecAux typesCons
+            isRecAux [] = []
+            isRecAux (x:xs) = (or $ map (==(ConT typeName_nosimp)) x): isRecAux xs
+            --ReorderL reorders all this lists so they have all non recursive
+            --type constructors first and all recursive ones at the end
+            reorderL = auxFirst cInfo consts listOfFOut isRec 0 False
+            auxFirst is cs fs rs n foundRec
+                |n > ((length rs)-1) = (is, cs, fs, rs)
+                |foundRec && (not (rs!!n)) = auxFirst 
+                                              ((is!!n):(remove n is 0)) 
+                                              ((cs!!n):(remove n cs 0)) 
+                                              ((fs!!n):(remove n fs 0)) 
+                                              ((rs!!n):(remove n rs 0)) 0 False
+                |(not foundRec) && (rs!!n) = auxFirst is cs fs rs (n+1) (not foundRec)
+                |otherwise = auxFirst is cs fs rs (n+1) foundRec
+            --removes position n from the list (x:xs)
+            remove n (x:xs) actPos
+                |n==actPos = xs
+                |otherwise = x:(remove n xs (actPos+1))
+
+            --This four functions serve to take the reordered lists for those 4 lists
+            cInfoOrd = (\(x,_,_,_) -> x) reorderL
+            constsOrd = (\(_,x,_,_) -> x) reorderL
+            listOfFOutOrd = (\(_,_,x,_) -> x) reorderL
+            isRecOrd = (\(_,_,_,x) -> x) reorderL
+
 
             --gen_wheres is the auxiliar function that generates the where "clause"
             --of the function when necesary.
@@ -120,8 +145,8 @@ gen_clause gen_func cInfo consts typesCons typeName_nosimp =
                         listVariab 0 = []
                         listVariab n = (mkName ("x"++ show n)):(listVariab (n-1))
             --generates the body for the functions in the where clause when necessary.
-            bodyFunc listOfVar constructorStr = [clause (tupleParam listOfVar)
-                                                  (normalB (appsE ((conE constructorStr):
+            bodyFunc listOfVar constructorName = [clause (tupleParam listOfVar)
+                                                  (normalB (appsE ((conE constructorName):
                                                     (map varE listOfVar)))) []]
 
             tupleParam (v:vs) --tupleParam listVars
@@ -216,5 +241,3 @@ diags i dx dy xs ys
         tup k        = (x,y)
                        where x = xs !! k 
                              y = ys !! (i-k)
-
-data MyExp = Const Int Int  | Prod MyExp MyExp | Var Char Char | Sum MyExp MyExp
