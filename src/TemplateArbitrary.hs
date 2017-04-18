@@ -48,7 +48,7 @@ gen_arbitrary typName =
      --the constructors, name of the data-type without being simplified, and lastly
      --the function to generate the body of the function of the class.            
      i_dec <- gen_instance (mkName "Arbitrary") (conT t_name) cInfo consts
-                            typesCons noSimplifiedName t_name (mkName "arbitrary", gen_body)
+                        typesCons noSimplifiedName t_name (mkName "arbitrary", gen_body)
      return i_dec -- return the instance declaration
             -- gen_body is the function that we pass as an argument to gen_instance
             --and later on is used to generate the body of the arbitrary function 
@@ -129,39 +129,75 @@ gen_clause gen_func cInfo consts typesCons typeName_nosimp t_name =
             --gen_wheres is the auxiliar function that generates the where "clause"
             --of the function when necesary.
             gen_wheres _ [] [] [] [] = []
-            gen_wheres t_name rs ps ns cs = [funD t_name [clause [nvarP] (bodyFunc nName rs ps ns (map fst cs)) []]]
+            gen_wheres t_name rs ps ns cs = [funD t_name [clause [nvarP]
+                                              --body of the myExp function
+                                             (bodyFunc nName fName rs ps ns (map fst cs))
+                                              --inner where of the myExp function
+                                              [funD fName [clause [] (normalB(appE (varE t_name) (appsE (divE:nFunE:[[e|2|]])))) []]
+                                              ]]]
                where 
                     nName = mkName "n"
+                    nFunE = varE nName
+                    fName = mkName "myExp2"
+                    divE = varE 'div
                     nvarP = varP $ nName
                     
 
-            bodyFunc nName rs ps ns cs = normalB (appsE (freqE:freqL nName rs ps ns cs)) 
+            bodyFunc nName fName rs ps ns cs = normalB (appsE (freqE:[freqL nName fName rs ps ns cs])) 
                                           
               where
                     freqE = varE $ mkName "frequency"--TODO change to varE 'frequency
                    
 
-            freqL nName (r:rs) (p:ps) (n:ns) (c:cs)
-               | not r = tupE (([e|1|]):[appsE ((selectlift n):(conE c):[arbitraryE])]):(freqL nName rs ps ns cs)
-               | otherwise = []
-               
-               where
-                    nvarE = varE nName
-                    arbitraryE = varE $ mkName "arbitrary" --TODO change to varE 'arbitrary
-                    concE = varE '(++)
+            freqL nName fName rs ps ns cs
+               | isNormal && isRecur = appsE (concE:(listE 
+                                          (normalAux fName (beg ps nNor) (beg ns nNor) (beg cs nNor))):
+                                            [appsE (concatE:[recurAux nName fName (end ps nNor) (end ns nNor) (end cs nNor)])])
+               | isNormal = listE (normalAux fName (beg ps nNor) (beg ns nNor) (beg cs nNor))
+               | isRecur = appsE (concatE:[recurAux nName fName (end ps nNor) (end ns nNor) (end cs nNor)])
 
-                    selectlift n 
-                       | n == 1 = liftME
-                       | n == 2 = liftM2E
-                       | n == 3 = liftM3E
-                       | n == 4 = liftM4E
-                       | n == 5 = liftM5E
+                where 
+                      concE = varE '(++)
+                      concatE = varE 'concat
+                      isRecur = nRec > 0
+                      nRec = length $ filter (==True) rs
+                      isNormal =  nNor > 0
+                      nNor = length $ filter (==False) rs
+                      beg (x:xs)  n
+                         | n == 0 = []
+                         | otherwise = x:(beg xs (n-1))
+                      end (x:xs) n
+                         | n == 0 = (x:xs)
+                         | otherwise = end xs (n-1)
 
-                    liftME = varE 'liftM
-                    liftM2E = varE 'liftM2
-                    liftM3E = varE 'liftM3
-                    liftM4E = varE 'liftM4
-                    liftM5E = varE 'liftM5
+            normalAux _ [] [] [] = []
+            normalAux fName (p:ps) (n:ns) (c:cs) = (tupE (([e|1|]):[appsE ((selectlift n):(conE c):(arbitraryArg fName p))])):(normalAux fName ps ns cs)
+            recurAux nName fName ps ns cs = listE [listE (recAux2 fName ps ns cs)]
+            recAux2 _ [] [] [] = []
+            recAux2 fName (p:ps) (n:ns) (c:cs) = (tupE (([e|4|]):[appsE ((selectlift n):(conE c):(arbitraryArg fName p))])):(recAux2 fName ps ns cs)
+
+            arbitraryArg _ [] = []
+            arbitraryArg fName (x:xs)
+              | x == False = (arbitraryE):(arbitraryArg fName xs)
+              | x == True = (myExp2E):(arbitraryArg fName xs)
+
+                  where
+                       arbitraryE = varE $ mkName "arbitrary" --TODO change to varE 'arbitrary
+                       myExp2E = varE fName
+                    
+            selectlift n 
+              | n == 1 = liftME
+              | n == 2 = liftM2E
+              | n == 3 = liftM3E
+              | n == 4 = liftM4E
+              | n == 5 = liftM5E
+                where 
+                     liftME = varE 'liftM
+                     liftM2E = varE 'liftM2
+                     liftM3E = varE 'liftM3
+                     liftM4E = varE 'liftM4
+                     liftM5E = varE 'liftM5
+
 
 
 --Extracting information of the of the declaration of the data type, these are:
