@@ -129,11 +129,12 @@ gen_clause gen_func cInfo consts typesCons typeName_nosimp t_name =
             --gen_wheres is the auxiliar function that generates the where "clause"
             --of the function when necesary.
             gen_wheres _ [] [] [] [] = []
-            gen_wheres t_name rs ps ns cs = [funD t_name [clause [nvarP]
+            gen_wheres t_n rs ps ns cs = [funD t_n [clause [nvarP]
                                               --body of the myExp function
                                              (bodyFunc nName fName rs ps ns (map fst cs))
                                               --inner where of the myExp function
-                                              [funD fName [clause [] (normalB(appE (varE t_name) (appsE (divE:nFunE:[[e|2|]])))) []]
+                                              [funD fName [clause [] (normalB
+                                               (appE (varE t_n) (appsE (divE:nFunE:[[e|2|]])))) []]
                                               ]]]
                where 
                     nName = mkName "n"
@@ -143,7 +144,8 @@ gen_clause gen_func cInfo consts typesCons typeName_nosimp t_name =
                     nvarP = varP $ nName
                     
 
-            bodyFunc nName fName rs ps ns cs = normalB (appsE (freqE:[freqL nName fName rs ps ns cs])) 
+            bodyFunc nName fName rs ps ns cs = normalB (appsE 
+                                                (freqE:[freqL nName fName rs ps ns cs])) 
                                           
               where
                     freqE = varE $ mkName "frequency"--TODO change to varE 'frequency
@@ -151,14 +153,20 @@ gen_clause gen_func cInfo consts typesCons typeName_nosimp t_name =
 
             freqL nName fName rs ps ns cs
                | isNormal && isRecur = appsE (concE:(listE 
-                                          (normalAux fName (beg ps nNor) (beg ns nNor) (beg cs nNor))):
-                                            [appsE (concatE:[recurAux nName fName (end ps nNor) (end ns nNor) (end cs nNor)])])
-               | isNormal = listE (normalAux fName (beg ps nNor) (beg ns nNor) (beg cs nNor))
-               | isRecur = appsE (concatE:[recurAux nName fName (end ps nNor) (end ns nNor) (end cs nNor)])
+                                          (normalAux fName (fst indices) (beg ps nNor) (beg ns nNor) (beg cs nNor))):
+                                            [compE [noBindS (appsE (greaterE:nVarE:[[e|0|]])),noBindS (appsE (concatE:[recurAux nName fName (snd indices) (end ps nNor) (end ns nNor) (end cs nNor)]))]])
+               | isNormal = listE (normalAux fName (fst indices) (beg ps nNor) (beg ns nNor) (beg cs nNor))
+               | isRecur = appsE (concatE:(recurAux nName fName (snd indices) (end ps nNor) (end ns nNor) (end cs nNor)):[compE [noBindS (appsE (greaterE:nVarE:[[e|0|]]))]])
 
                 where 
                       concE = varE '(++)
+                      greaterE = varE '(>)
+                      nVarE = varE nName
                       concatE = varE 'concat
+                      indices = (eraseZeros (2000 `div` nNor), eraseZeros (8000 `div` nRec)) --I'm giving a 20% to base case and 80% to recursive
+                      eraseZeros n
+                         | n > 9 = eraseZeros (n `div` 10)
+                         | otherwise = n
                       isRecur = nRec > 0
                       nRec = length $ filter (==True) rs
                       isNormal =  nNor > 0
@@ -170,20 +178,20 @@ gen_clause gen_func cInfo consts typesCons typeName_nosimp t_name =
                          | n == 0 = (x:xs)
                          | otherwise = end xs (n-1)
 
-            normalAux _ [] [] [] = []
-            normalAux fName (p:ps) (n:ns) (c:cs) = (tupE (([e|1|]):[appsE ((selectlift n):(conE c):(arbitraryArg fName p))])):(normalAux fName ps ns cs)
-            recurAux nName fName ps ns cs = listE [listE (recAux2 fName ps ns cs)]
-            recAux2 _ [] [] [] = []
-            recAux2 fName (p:ps) (n:ns) (c:cs) = (tupE (([e|4|]):[appsE ((selectlift n):(conE c):(arbitraryArg fName p))])):(recAux2 fName ps ns cs)
+            normalAux _ _ [] [] [] = []
+            normalAux fName num (p:ps) (n:ns) (c:cs) = (tupE (([e|num|]):[appsE ((selectlift n):(conE c):(arbitraryArg fName p))])):(normalAux fName num ps ns cs)
+            recurAux nName fName n ps ns cs = listE [listE (recAux2 fName n ps ns cs)]
+            recAux2 _ _ [] [] [] = []
+            recAux2 fName num (p:ps) (n:ns) (c:cs) = (tupE (([e|num|]):[appsE ((selectlift n):(conE c):(arbitraryArg fName p))])):(recAux2 fName num ps ns cs)
 
             arbitraryArg _ [] = []
             arbitraryArg fName (x:xs)
               | x == False = (arbitraryE):(arbitraryArg fName xs)
-              | x == True = (myExp2E):(arbitraryArg fName xs)
+              | x == True = (fExp):(arbitraryArg fName xs)
 
                   where
                        arbitraryE = varE $ mkName "arbitrary" --TODO change to varE 'arbitrary
-                       myExp2E = varE fName
+                       fExp = varE fName
                     
             selectlift n 
               | n == 1 = liftME

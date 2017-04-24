@@ -5,6 +5,7 @@ module Main where
 import Language.Haskell.TH
 import GHC.Generics
 import Sized
+import Arbitrary
 import TemplateAllv
 import TemplateArbitrary
 
