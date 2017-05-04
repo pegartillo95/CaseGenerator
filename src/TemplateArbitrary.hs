@@ -5,6 +5,7 @@ module TemplateArbitrary (
     , gen_arbitrary
     )where
 
+import Arbitrary
 import Language.Haskell.TH
 import Data.Char
 import System.Random
@@ -263,63 +264,3 @@ simpleName nm =
         []          -> mkName s
         _:[]        -> mkName s
         _:t         -> mkName t
-
---TyConI (DataD [] TemplateArbitrary.MyExp [] [
---NormalC TemplateArbitrary.Const [(NotStrict,ConT GHC.Types.Int),(NotStrict,ConT GHC.Types.Int)],
---NormalC TemplateArbitrary.Prod [(NotStrict,ConT TemplateArbitrary.MyExp),(NotStrict,ConT TemplateArbitrary.MyExp)],
---NormalC TemplateArbitrary.Var [(NotStrict,ConT GHC.Types.Char),(NotStrict,ConT GHC.Types.Char)],
---NormalC TemplateArbitrary.Sum [(NotStrict,ConT TemplateArbitrary.MyExp),(NotStrict,ConT TemplateArbitrary.MyExp)]] [])
-
-
-------------------------------------------
---------Auxiliary types-------------------
-------------------------------------------
-
--- | The "standard" QuickCheck random number generator.
--- A wrapper around either 'TFGen' on GHC, or 'StdGen'
--- on other Haskell systems.
-{-newtype QCGen = QCGen TheGen
-
-instance Show QCGen where
-  showsPrec n (QCGen g) = showsPrec n g
-instance Read QCGen where
-  readsPrec n xs = [(QCGen g, ys) | (g, ys) <- readsPrec n xs]
-
-instance RandomGen QCGen where
-  split (QCGen g) =
-    case split g of
-      (g1, g2) -> (QCGen g1, QCGen g2)
-  genRange (QCGen g) = genRange g
-  next (QCGen g) =
-    case next g of
-      (x, g') -> (x, QCGen g')-}
-
-
-
-------------------------------------------
---------Auxiliary functions---------------
-------------------------------------------
-
--- | A generator for values of type @a@.
-{-newtype Gen a = MkGen{
-  unGen :: QCGen -> Int -> a -- ^ Run the generator on a particular seed.
- }
-
-frequency :: [(Int, Arbitrary a)] -> Arbitrary a
-frequency [] = error "QuickCheck.frequency used with empty list"
-frequency xs0 = choose (1, tot) >>= (`pick` xs0)
- where
-  tot = sum (map fst xs0)
-
-  pick n ((k,x):xs)
-    | n <= k    = x
-    | otherwise = pick (n-k) xs
-  pick _ _  = error "QuickCheck.pick used with empty list"
-
-
-sized :: (Int -> Gen a) -> Gen a
-sized f = MkGen (\r n -> let MkGen m = f n in m r n)
-
--- | Generates a random element in the given inclusive range.
-choose :: Random a => (a,a) -> Gen a
-choose rng = MkGen (\r _ -> let (x,_) = randomR rng r in x)-}

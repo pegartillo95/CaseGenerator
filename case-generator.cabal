@@ -27,6 +27,7 @@ library
                        , ghc-boot-th >= 8.0.1
                        , pretty >  1.1.0.0
                        , random >= 1.1
+                       , tf-random > 0.4
   default-language:    Haskell2010
 
 executable case-generator-exe
