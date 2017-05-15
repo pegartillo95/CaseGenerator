@@ -20,7 +20,7 @@ import Control.Monad
   )
 
 -- | This is the exported, visible class
-class Arbitrary a where
+{-class Arbitrary a where
     arbitrary :: Gen a
 
 --instances for the class Arbitrary of base data types
@@ -237,4 +237,4 @@ class Arbitrary2 f where
   liftArbitrary2 :: Gen a -> Gen b -> Gen (f a b)
 
 arbitrary2 :: (Arbitrary2 f, Arbitrary a, Arbitrary b) => Gen (f a b)
-arbitrary2 = liftArbitrary2 arbitrary arbitrary
+arbitrary2 = liftArbitrary2 arbitrary arbitrary-}

@@ -8,6 +8,7 @@ import Sized
 import Arbitrary
 import TemplateAllv
 import TemplateArbitrary
+import UUTReader
 
 -----------------------------------------------------------------------------------
 -- | Programming generic size and generic enumeration of values
@@ -16,9 +17,16 @@ import TemplateArbitrary
 
 --Dumb main function
 main :: IO ()
-main = putStrLn $(lookupValueName "gen_arbitrary" >>= 
+{-main = putStrLn $(lookupValueName "extract_info" >>= 
+                  (\(Just name) -> extract_info (reify name) >>=
+                           (\(_,_,text) -> stringE $ simplifyParsing text
+                            )))-}
+
+
+{-main = putStrLn $(lookupValueName "extract_info" >>= 
                   (\(Just name) -> reify name >>= 
-                       (\info -> (stringE . show) info)))
+                       (\info -> (stringE . show) info
+                        )))-}
 --main = putStrLn $ pprint ($(doE [letS [(gen_arbitrary ''MyExp)]]))
 --main =putStrLn $(stringE . show =<< reify ''MyExp)
 
@@ -61,4 +69,17 @@ main = putStrLn $(lookupValueName "gen_arbitrary" >>=
      [AppT (ConT GHC.Real.Integral) (VarT a_1627411077)] 
       (AppT (AppT ArrowT (VarT a_1627411077)) (AppT (AppT ArrowT (VarT a_1627411077)) (VarT a_1627411077)))) 
       GHC.Real.Integral (Fixity 7 InfixL)-}
+
+
+{-VarI TemplateArbitrary.gen_arbitrary
+ (AppT (AppT ArrowT (ConT Language.Haskell.TH.Syntax.Name)) 
+ (AppT (ConT Language.Haskell.TH.Syntax.Q) (ConT Language.Haskell.TH.Syntax.Dec)))
+  Nothing (Fixity 9 InfixL)-}
+
+{-VarI UUTReader.extract_info
+ (AppT (AppT ArrowT (ConT Language.Haskell.TH.Lib.InfoQ))
+  (AppT (ConT Language.Haskell.TH.Syntax.Q)
+   (AppT (AppT (AppT (TupleT 3) (ConT Language.Haskell.TH.Syntax.Name))
+    (ConT Language.Haskell.TH.Syntax.Name)) (ConT GHC.Base.String))))
+     Nothing (Fixity 9 InfixL)-}
  
