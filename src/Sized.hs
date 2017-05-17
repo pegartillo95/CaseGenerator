@@ -31,9 +31,9 @@ instance Allv Char where
 
 -- | This is the exported, visible class that inherits from Allv.
 class (Allv a) => Sized a where
-  -- This function returns the first n elements of size m from the "allv" list
+  -- This function returns the first n elements of size lower or equal m from the "allv" list
   sized::Int->Int->[a]
-  sized n m = take n (filter (\x-> (size x) == m) allv)
+  sized n m = take n (filter (\x-> (size x) <= m) allv)
 
   --This function takes an integer n and returns the n first elements of the "allv" list
   smallest::Int->[a]

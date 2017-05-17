@@ -9,8 +9,7 @@ import Sized
 import Arbitrary
 import TemplateAllv
 import TemplateArbitrary
---import de la clase de UUT
-
+import UUT
 
 --reads from the UUT archive the number of methods to tests 
 --them one by one.
@@ -18,8 +17,8 @@ import TemplateArbitrary
 
 test_UUT n
    | n > 0 = do
-   	           reified <- reify_func ("uutPrec-" ++ (show n))
-               info <- extract_info reified
+   	           reified <- reify_func ("uutPrec_" ++ (show n))
+               --info <- extract_info reified
 
 
 reify_func :: String -> Q Info
@@ -34,7 +33,7 @@ extract_info m =
             return $ (funcName d, simpleName $ funcName d, parseDataTypes d)
            d@(ClassOpI _ _ _ _) ->
             return $ (funcName d, simpleName $ funcName d, parseDataTypes d)
-           _ -> error ("derive: not a function declaration: " ++ show d)
+           _ -> error ("Error in extract_info" ++ show d)
      where
         funcName (VarI n _ _ _)  = n
         funcName (ClassOpI n _ _ _) = n
