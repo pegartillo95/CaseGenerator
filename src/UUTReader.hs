@@ -13,17 +13,17 @@ import UUT
 
 --reads from the UUT archive the number of methods to tests 
 --them one by one.
-{-read_UUT = test_UUT uutNMethods
+read_UUT = test_UUT uutMethods
 
 test_UUT n
    | n > 0 = do
-   	           reified <- reify_func ("uutPrec_" ++ (show n))
-               --info <- extract_info reified
+             (reify_func ("uutPrec_" ++ (show n))) >>=
+             (\reified -> extract_info reified)
 
 
 reify_func :: String -> Q Info
-reify_func string = $(lookupValueName string >>= 
-                        (\(Just name) -> reify name))-}
+reify_func str = $(lookupValueName str >>= 
+                        (\(Just name) -> reify name))
 
 extract_info :: InfoQ -> Q(Name, Name, String)
 extract_info m =
