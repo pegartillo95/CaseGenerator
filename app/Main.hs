@@ -17,10 +17,10 @@ import UUTReader
 
 --Dumb main function
 main :: IO ()
-main = putStrLn $(lookupValueName "compose" >>= 
+{-main = putStrLn $(lookupValueName "compose" >>= 
                   (\(Just name) -> extract_info (reify name) >>=
                            (\(_,_,text) -> stringE $ simplifyParsing text
-                            )))
+                            )))-}
 
 
 {-main = putStrLn $(lookupValueName "extract_info" >>= 

@@ -23,7 +23,7 @@ data MyExp = Const Int Int  | Prod MyExp MyExp | Var Char Char | Sum MyExp MyExp
 -- A list of variables that bind in the constructor
 type Cons_vars = [ExpQ]
 --The type of the function that generates the body
-type Gen_func = [Int] -> [Name]  -> [Name] -> [Bool] -> [ExpQ]
+type Gen_func = [Int] -> [Name]  -> [Name] -> [ExpQ]
 -- The name of the instance function we will be creating
 type Func_name = Name   
 --Tuple that pairs the func_name and the function to generate the body
@@ -45,15 +45,13 @@ gen_allv typName =
             -- gen_body is the function that we pass as an argument to gen_instance
             --and later on is used to generate the body of the allv function 
             --for a determined data-type
-       where gen_body :: [Int] -> [Name]  -> [Name] -> [Bool] -> [ExpQ]
-             gen_body _ [] [] [] = []
-             gen_body (i:is) (c:cs) (f:fs) (r:rs) --cInfo consts listOfF isRecList 
+       where gen_body :: [Int] -> [Name] -> [Name]-> [ExpQ]
+             gen_body _ [] [] = []
+             gen_body (i:is) (c:cs) (f:fs) --cInfo consts listOfF 
                 | null cs = [appsE (mapE:constructorF:(allvFunc i))] ++
-                              (gen_body is cs fs rs)
-                | not r = [appsE (varE '(++):[appsE (mapE:constructorF:
-                            (allvFunc i))] ++ gen_body is cs fs rs)]
+                              (gen_body is cs fs)
                 | otherwise = [appsE (varE '(++):[appsE (mapE:constructorF:
-                                (allvFunc i))] ++ gen_body is cs fs rs)]
+                            (allvFunc i))] ++ gen_body is cs fs)]
                       where --constructorF decided to use the data constructor
                             --if having just one parameter or to use a function if
                             --having more than one. This is duo to the fact that
@@ -95,7 +93,7 @@ gen_clause :: Gen_func -> [Int] -> [Name] -> [[Type]] -> Name -> ClauseQ
 gen_clause gen_func cInfo consts typesCons typeName_nosimp = 
       (clause []
              --here we execute the gen_function to generate the body of the function
-            (normalB $ head (gen_func cInfoOrd constsOrd listOfFOutOrd isRecOrd))
+            (normalB $ head (gen_func cInfoOrd constsOrd listOfFOutOrd))
              --this other one generates the where clause of the function
              (gen_wheres cInfoOrd constsOrd listOfFOutOrd))
       where --listOfFOut generates a fresh list of "Name" for n different f's

@@ -13,7 +13,7 @@ import UUT
 
 --reads from the UUT archive the number of methods to tests 
 --them one by one.
-read_UUT = test_UUT uutMethods
+{-read_UUT = test_UUT uutMethods
 
 test_UUT n
    | n > 0 = do
@@ -84,5 +84,5 @@ auxiliarParse s
              | otherwise = stringSkip (n-1) xs
           baseVar s formedS
              | (head s) /= ' '  = baseVar (tail s) (formedS ++ [head s])
-             | otherwise = (formedS , (lstrip (tail s)))
+             | otherwise = (formedS , (lstrip (tail s)))-}
           
