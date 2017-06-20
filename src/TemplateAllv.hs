@@ -20,12 +20,10 @@ data MyExp = Const Int Int  | Prod MyExp MyExp | Var Char Char | Sum MyExp MyExp
 -------------------- Usefull alias for some data types------------------------------
 ------------------------------------------------------------------------------------
 
--- the list of consts
-type Constructor = (Name, [(Maybe Name, Type)])
 -- A list of variables that bind in the constructor
 type Cons_vars = [ExpQ]
 --The type of the function that generates the body
-type Gen_func = [(Name, Int)] -> [Constructor]  -> [Name] -> [Bool] -> [ExpQ]
+type Gen_func = [Int] -> [Name]  -> [Name] -> [Bool] -> [ExpQ]
 -- The name of the instance function we will be creating
 type Func_name = Name   
 --Tuple that pairs the func_name and the function to generate the body
@@ -47,15 +45,15 @@ gen_allv typName =
             -- gen_body is the function that we pass as an argument to gen_instance
             --and later on is used to generate the body of the allv function 
             --for a determined data-type
-       where gen_body :: [(Name, Int)] -> [Constructor]  -> [Name] -> [Bool] -> [ExpQ]
+       where gen_body :: [Int] -> [Name]  -> [Name] -> [Bool] -> [ExpQ]
              gen_body _ [] [] [] = []
              gen_body (i:is) (c:cs) (f:fs) (r:rs) --cInfo consts listOfF isRecList 
-                | null cs = [appsE (mapE:constructorF:(allvFunc (snd i)))] ++
+                | null cs = [appsE (mapE:constructorF:(allvFunc i))] ++
                               (gen_body is cs fs rs)
                 | not r = [appsE (varE '(++):[appsE (mapE:constructorF:
-                            (allvFunc (snd i)))] ++ gen_body is cs fs rs)]
+                            (allvFunc i))] ++ gen_body is cs fs rs)]
                 | otherwise = [appsE (varE '(++):[appsE (mapE:constructorF:
-                                (allvFunc (snd i)))] ++ gen_body is cs fs rs)]
+                                (allvFunc i))] ++ gen_body is cs fs rs)]
                       where --constructorF decided to use the data constructor
                             --if having just one parameter or to use a function if
                             --having more than one. This is duo to the fact that
@@ -63,8 +61,8 @@ gen_allv typName =
                             --we need to apply compose to them and then apply a
                             --function over the result of compose.
                             constructorF 
-                                | (snd i) > 1 = varE f
-                                | otherwise = conE $ fst c
+                                | i > 1 = varE f
+                                | otherwise = conE c
                             --mapE, composeE and allvE are three auxiliar function
                             --that serve to get the expresion equivalent to those 3
                             --functions in template haskell
@@ -79,7 +77,7 @@ gen_allv typName =
 
 --Construct an instance of class class_name for type for_type
 --with a corresponding function  to build the method body
-gen_instance :: Name -> TypeQ -> [(Name, Int)] -> [Constructor]
+gen_instance :: Name -> TypeQ -> [Int] -> [Name]
                   -> [[Type]] -> Name -> Func -> DecQ
 gen_instance class_name for_type cInfo consts typesCons typeName_nosimp func =
   instanceD (cxt [])
@@ -93,13 +91,13 @@ gen_instance class_name for_type cInfo consts typesCons typeName_nosimp func =
 
 -- Generate the pattern match and function body for a given method and
 -- a given data-type. gen_func is the function that generates the function body
-gen_clause :: Gen_func -> [(Name, Int)] -> [Constructor] -> [[Type]] -> Name -> ClauseQ
+gen_clause :: Gen_func -> [Int] -> [Name] -> [[Type]] -> Name -> ClauseQ
 gen_clause gen_func cInfo consts typesCons typeName_nosimp = 
       (clause []
              --here we execute the gen_function to generate the body of the function
             (normalB $ head (gen_func cInfoOrd constsOrd listOfFOutOrd isRecOrd))
              --this other one generates the where clause of the function
-             (gen_wheres (map snd cInfoOrd) constsOrd listOfFOutOrd))
+             (gen_wheres cInfoOrd constsOrd listOfFOutOrd))
       where --listOfFOut generates a fresh list of "Name" for n different f's
             --this f's are used when one of the data types has more than one
             --parameter 
@@ -140,7 +138,7 @@ gen_clause gen_func cInfo consts typesCons typeName_nosimp =
             --of the function when necesary.
             gen_wheres [] [] [] = []
             gen_wheres (n:ns) (c:cs) (f:fs) --gen_wheres numParam consts listOfF 
-                | n > 1 = funD f (bodyFunc listOfVar (fst c)):gen_wheres ns cs fs
+                | n > 1 = funD f (bodyFunc listOfVar c):gen_wheres ns cs fs
                 | otherwise = gen_wheres ns cs fs
                   where listOfVar = listVariab n
                         listVariab 0 = []
@@ -158,13 +156,12 @@ gen_clause gen_func cInfo consts typesCons typeName_nosimp =
 --Extracting information of the of the declaration of the data type, these are:
 --  > The name of the type simplified (without the module name)
 --  > The name of the type without being simplified
---  > A list of tuples one for each constructor having the name and the number
---      of arguments of each of them.
---  > A list of a tuple having the name of the type constructor and a list of maybe
---      the data constructor and the type of its parameters. 
+--  > A list of integers one for each constructor expresing the number of
+--      arguments of each of them.
+--  > A list of names of the different type constructors.
 --  > List of lists each of the inner list having the types of the parameters of
 --      data constructor.
-typeInfo :: DecQ -> Q (Name, Name,[(Name, Int)],[(Name, [(Maybe Name, Type)])],[[Type]])
+typeInfo :: DecQ -> Q (Name, Name,[Int],[Name],[[Type]])
 typeInfo m =
      do d <- m
         case d of
@@ -178,9 +175,9 @@ typeInfo m =
         consA (DataD _ _ _ cs _)    = map conA cs
         consA (NewtypeD _ _ _ c _)  = [ conA c ]
 
-        conA (NormalC c xs)         = (simpleName c, length xs)
-        conA (RecC c xs)            = (simpleName c, length xs)
-        conA (InfixC _ c _)         = (simpleName c, 2)
+        conA (NormalC c xs)         = length xs
+        conA (RecC c xs)            = length xs
+        conA (InfixC _ c _)         = 2
  
         nameFromTyVar (PlainTV a)    = a
         nameFromTyVar (KindedTV a _) = a
@@ -188,9 +185,9 @@ typeInfo m =
         termsA (DataD _ _ _ cs _)   = map termA cs
         termsA (NewtypeD _ _ _ c _) = [ termA c ]
  
-        termA (NormalC c xs)      = (c, map (\x -> (Nothing, snd x)) xs)
-        termA (RecC c xs)         = (c, map (\(n, _, t) -> (Just $ simpleName n, t)) xs)
-        termA (InfixC t1 c t2)    = (c, [(Nothing, snd t1), (Nothing, snd t2)])
+        termA (NormalC c xs)      = c
+        termA (RecC c xs)         = c
+        termA (InfixC t1 c t2)    = c
  
         name (DataD _ n _ _ _)      = n
         name (NewtypeD _ n _ _ _)   = n

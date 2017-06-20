@@ -27,7 +27,7 @@ main = putStrLn $(lookupValueName "compose" >>=
                   (\(Just name) -> reify name >>= 
                        (\info -> (stringE . show) info
                         )))-}
---main = putStrLn $ pprint ($(doE [letS [(gen_arbitrary ''MyExp)]]))
+main = putStrLn $ pprint ($(doE [letS [(gen_allv ''MyExp)]]))
 --main =putStrLn $(stringE . show =<< reify ''MyExp)
 
 
