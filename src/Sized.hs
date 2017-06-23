@@ -39,6 +39,8 @@ class (Allv a) => Sized a where
   smallest::Int->[a]
   smallest n = take n allv
 
+
+
   size ::  a -> Int
   default size :: (Generic a, GSized (Rep a)) => a -> Int
   size a = gsize (from a)
