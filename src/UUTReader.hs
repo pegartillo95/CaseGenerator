@@ -12,9 +12,6 @@ import TemplateArbitrary
 import UUT
 import UUTReaderUtilities
 
-stupid :: Int -> Int
-stupid n = n
-
 --reads from the UUT archive the number of methods to tests 
 --them one by one.
 {-read_UUT = test_UUT 1 uutMethods
