@@ -116,3 +116,13 @@ passFun f_name n (t:ts) solList = passFun f_name n ts (solList++y)
 
 testP :: Name -> Int -> a -> b
 testP f_name n t = $(lamE (tupleParam (listVar n)) (body f_name (listVar n))) t
+
+
+-----Function to test the postcondition----------------------------------
+testPost :: Name -> Int -> [a] -> [b] -> Bool
+testPost _ _ [] [] = True
+testPost f_name n (t:ts) (o:os) = aux_bool && (testPost f_name n ts os)
+     where aux_bool = post f_name n t o
+
+post :: Name -> a -> b -> Bool
+post f_name n t o = $(lamE ((tupleParam (listVar n))++[varP nameY]) (body2 f_name (listVar n)))
