@@ -28,7 +28,15 @@ test_UUT i n
    | otherwise = do Just name <- lookupValueName ("uutPrec-"++(show i))
                     info <- extract_info (reify name)
                     return-}
-                     
+     
+get_f_inp_types :: String -> [String]
+get_f_inp_types str = (lookupValueName str >>= 
+                        (\(Just name) -> extract_info (reify name) >>=
+                           (\(_,_,text) -> return(simplifyParsing text) >>=
+                              (\t -> return(extract_types t [] "")
+                                ))))
+
+
 
 extract_info :: InfoQ -> Q(Name, Name, String)
 extract_info m =
@@ -54,7 +62,7 @@ extract_info m =
         parsing (ListT) = "[] "
         parsing ((TupleT 2)) = "(,) "
         parsing ((TupleT 3)) = "(,,) "
-        parsing ((VarT _)) = "GHC.Types.Int "
+        parsing ((VarT _)) = "Int " --GHC.Types.Int
         parsing ((ConT x)) = (nameBase x) ++ " " --Si es necesario (nameModule x) ++ "." ++ 
         parsing _ = "UND "
 
@@ -92,6 +100,9 @@ auxiliarParse s
              | (head s) /= ' '  = baseVar (tail s) (formedS ++ [head s])
              | otherwise = (formedS , (lstrip (tail s)))
 
+
+-------------Extracts the input types from the simplify parsing-----------
+
 extract_types :: String -> [String] -> String -> [String]
 extract_types [] list _ = list
 extract_types (x1:xs) list building_t
@@ -101,7 +112,7 @@ extract_types (x1:xs) list building_t
 
 ----------------Functions to filter the list of cases by precondition---
 
-filterPrec :: Name -> Int -> [a] -> [a] -> [a]
+{-filterPrec :: Name -> Int -> [a] -> [a] -> [a]
 filterPrec _ _ [] solList = solList 
 filterPrec f_name n (t:ts) solList = filterPrec f_name n ts (solList++x)
      where x = if (testP f_name n t) then [t]
@@ -125,4 +136,4 @@ testPost f_name n (t:ts) (o:os) = aux_bool && (testPost f_name n ts os)
      where aux_bool = post f_name n t o
 
 post :: Name -> a -> b -> Bool
-post f_name n t o = $(lamE ((tupleParam (listVar n))++[varP nameY]) (body2 f_name (listVar n)))
+post f_name n t o = $(lamE ((tupleParam (listVar n))++[varP nameY]) (body2 f_name (listVar n)))-}

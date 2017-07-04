@@ -12,10 +12,10 @@ tupleParam :: [Name] -> [PatQ]
 tupleParam listOfVar = [tupP (map varP listOfVar)]
 
 body :: Name -> [Name] -> ExpQ
-body f_name listOfVar = (appsE (varE f_name):(map varE listOfVar))
+body f_name listOfVar = (appsE ((varE f_name):(map varE listOfVar)))
 
 body2 :: Name -> [Name]-> ExpQ
-body2 f_name listOfVar = (appsE (varE f_name):((map varE listOfVar)++[varE nameY]))
+body2 f_name listOfVar = (appsE ((varE f_name):((map varE listOfVar)++[varE nameY])))
 
 nameY :: Name
 nameY = mkName "y"

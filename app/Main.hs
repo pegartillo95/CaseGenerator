@@ -17,7 +17,12 @@ import UUTReader
 
 --Dumb main function
 main :: IO ()
-main = putStrLn $(stringE $ nameBase ''MyExp)
+main = putStrLn $(lookupValueName "compose" >>= 
+                  (\(Just name) -> extract_info (reify name) >>=
+                           (\(_,_,text) -> return(simplifyParsing text) >>=
+                                  (\t -> return(extract_types t [] "") >>=
+                                     (\(x:x2:xs) -> stringE x2
+                                       )))))
 
 {-main = putStrLn $(lookupValueName "stupid" >>= 
                   (\(Just name) -> extract_info (reify name) >>=
@@ -28,13 +33,6 @@ main = putStrLn $(stringE $ nameBase ''MyExp)
                   (\(Just name) -> reify name >>=
                      (\info -> (stringE . show) info
                     )))-}
-
-{-main = putStrLn $(lookupValueName "compose" >>= 
-                  (\(Just name) -> extract_info (reify name) >>=
-                           (\(_,_,text) -> return(simplifyParsing text) >>=
-                                  (\t -> return(extract_types t [] "") >>=
-                                     (\(x:x2:xs) -> stringE x2
-                                       )))))-}
 
 --main = putStrLn $ pprint ($(doE [letS [(gen_allv ''MyExp)]]))
 --main =putStrLn $(stringE . show =<< reify ''MyExp)
