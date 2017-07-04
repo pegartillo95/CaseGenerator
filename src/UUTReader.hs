@@ -10,20 +10,25 @@ import Arbitrary
 import TemplateAllv
 import TemplateArbitrary
 import UUT
+import UUTReaderUtilities
+
+stupid :: Int -> Int
+stupid n = n
 
 --reads from the UUT archive the number of methods to tests 
 --them one by one.
-{-read_UUT = test_UUT uutMethods
+{-read_UUT = test_UUT 1 uutMethods
 
-test_UUT n
-   | n > 0 = do
-             (reify_func ("uutPrec_" ++ (show n))) >>=
-             (\reified -> extract_info reified)
-
-
-reify_func :: String -> Q Info
-reify_func str = $(lookupValueName str >>= 
-                        (\(Just name) -> reify name))
+test_UUT :: Int -> Int -> [Bool]
+test_UUT i n
+   | i < n = do Just name <- lookupValueName ("uutPrec-"++(show i))
+                info <- extract_info (reify name)
+                parsed_type <- (\(_,_,text) -> simplifyParsing text) info
+                test_UUT (i+1) n
+   | otherwise = do Just name <- lookupValueName ("uutPrec-"++(show i))
+                    info <- extract_info (reify name)
+                    return-}
+                     
 
 extract_info :: InfoQ -> Q(Name, Name, String)
 extract_info m =
@@ -49,8 +54,8 @@ extract_info m =
         parsing (ListT) = "[] "
         parsing ((TupleT 2)) = "(,) "
         parsing ((TupleT 3)) = "(,,) "
-        parsing ((VarT _)) = "Int "
-        parsing ((ConT x)) = (nameBase x) ++ " "
+        parsing ((VarT _)) = "GHC.Types.Int "
+        parsing ((ConT x)) = (nameBase x) ++ " " --Si es necesario (nameModule x) ++ "." ++ 
         parsing _ = "UND "
 
 
@@ -62,10 +67,11 @@ simpleName nm =
         _:[]        -> mkName s
         _:t         -> mkName t
 
+simplifyParsing :: String -> String
 simplifyParsing string = fst (auxiliarParse string)
 
 auxiliarParse s
-    | startswith "->" (lstrip s) = ( "("++(fst call2) ++ " -> " ++ (fst (call 0 (snd call2))) ++ ")" , snd (call 0 (snd call2)))
+    | startswith "->" (lstrip s) = ( (fst call2) ++ " -> " ++ (fst (call 0 (snd call2))) , snd (call 0 (snd call2)))
     | startswith "[]" (lstrip s) = ("[" ++ (fst call2) ++ "]", snd call2)
     | startswith "(,)" (lstrip s) = ("(" ++ (fst call3) ++ "," ++ (fst (call 0 (snd call3))) ++ ")" , snd (call 0 (snd call3)))
     | startswith "(,,)" (lstrip s) = ("(" ++ (fst call4) ++ "," ++ (fst (call 0 (snd call4))) ++ "," ++ (fst (call 0 (snd (call 0 (snd call4))))) ++ ")" , snd (call 0 (snd (call 0 (snd call4)))))
@@ -84,5 +90,29 @@ auxiliarParse s
              | otherwise = stringSkip (n-1) xs
           baseVar s formedS
              | (head s) /= ' '  = baseVar (tail s) (formedS ++ [head s])
-             | otherwise = (formedS , (lstrip (tail s)))-}
-          
+             | otherwise = (formedS , (lstrip (tail s)))
+
+extract_types :: String -> [String] -> String -> [String]
+extract_types [] list _ = list
+extract_types (x1:xs) list building_t
+     | (x1 == ' ') || (x1 == '>') = extract_types xs list building_t
+     | (x1 == '-')= extract_types xs (list++[building_t]) ""
+     | otherwise = extract_types xs list (building_t++[x1])
+
+----------------Functions to filter the list of cases by precondition---
+
+filterPrec :: Name -> Int -> [a] -> [a] -> [a]
+filterPrec _ _ [] solList = solList 
+filterPrec f_name n (t:ts) solList = filterPrec f_name n ts (solList++x)
+     where x = if (testP f_name n t) then [t]
+               else []
+
+        
+---------Appplying the function to get the corresponding outputs---------
+passFun :: Name -> Int -> [a] -> [a] -> [a]
+passFun _ _ [] solList = solList 
+passFun f_name n (t:ts) solList = passFun f_name n ts (solList++y)
+     where y = testP f_name n t
+
+testP :: Name -> Int -> a -> b
+testP f_name n t = $(lamE (tupleParam (listVar n)) (body f_name (listVar n))) t

@@ -20,7 +20,7 @@ import Control.Monad
 
 
 
-data MyExp = Const Int | Prod MyExp MyExp | Var Char | Sum MyExp MyExp
+data MyExp = Const Int Int Char Char | Prod MyExp MyExp | Var Char Char | Sum MyExp MyExp
 
 
 ------------------------------------------------------------------------------------

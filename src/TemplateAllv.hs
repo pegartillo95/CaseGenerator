@@ -10,13 +10,6 @@ import Data.Char
 import Sized
 
 ------------------------------------------------------------------------------------
------------------------------ Defined data types --------------------------------------
-------------------------------------------------------------------------------------
-data MyExp = Const Int Int  | Prod MyExp MyExp | Var Char Char | Sum MyExp MyExp
-
-
-
-------------------------------------------------------------------------------------
 -------------------- Usefull alias for some data types------------------------------
 ------------------------------------------------------------------------------------
 
@@ -212,14 +205,34 @@ simpleName nm =
 
 compose ::[a] -> [b] -> [(a,b)]
 compose xs ys = (e:lattice)
-  where e:lattice = concat $ diags 0 0 0 xs ys
+  where e:lattice = concat $ diags 0 xs ys
 
 --
 -- It builds the lattice of tuples from two lists, each one may be either
 -- finite or infinite
 
 
-diags :: Int -> Int -> Int -> [a] -> [b] -> [[(a,b)]]
+diags :: Int -> [a] -> [b] -> [[(a,b)]]
+diags _ [] [] = [[]]
+diags i xs ys
+    | fullDiag     = [tup k | k <- [0..i]] : diags (i+1) xs ys
+    | finiteFirst  = diags (i-1) xs  ysr
+    | finiteSecond = diags (i-1) xsr ys
+    | otherwise    = diags (i-2) xsr ysr
+
+  where xs'          = drop i xs
+        ys'          = drop i ys
+        xsr          = tail xs
+        ysr          = tail ys
+        fullDiag     = not (null xs') && not (null ys')
+        finiteFirst  = null xs' && not (null ys')
+        finiteSecond = not (null xs') && null ys'
+        tup k        = (x,y)
+                       where x = xs !! k 
+                             y = ys !! (i-k)
+
+
+{-diags :: Int -> Int -> Int -> [a] -> [b] -> [[(a,b)]]
 diags _ _ _ [] [] = [[]]
 diags i dx dy xs ys
     | fullDiag     = [tup k | k <- [0..i]] : diags (i+1) dx dy xs ys
@@ -236,4 +249,4 @@ diags i dx dy xs ys
         finiteSecond = not (null xs') && null ys'
         tup k        = (x,y)
                        where x = xs !! k 
-                             y = ys !! (i-k)
+                             y = ys !! (i-k)-}
