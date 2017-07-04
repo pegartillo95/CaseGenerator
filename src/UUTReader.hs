@@ -34,6 +34,7 @@ get_f_inp_types str = (lookupValueName str >>=
                                 ))))
 
 
+--------Auxiliar functions for get_f_inp_types ------------------------------
 
 extract_info :: InfoQ -> Q(Name, Name, String)
 extract_info m =
@@ -98,7 +99,7 @@ auxiliarParse s
              | otherwise = (formedS , (lstrip (tail s)))
 
 
--------------Extracts the input types from the simplify parsing-----------
+-------------Extracts the input types from the simplify parsing----------
 
 extract_types :: String -> [String] -> String -> [String]
 extract_types [] list _ = list
@@ -107,9 +108,19 @@ extract_types (x1:xs) list building_t
      | (x1 == '-')= extract_types xs (list++[building_t]) ""
      | otherwise = extract_types xs list (building_t++[x1])
 
+
+
+----------------Execute precondition, function, postcondition ----------
+
+executePreFunPost :: (Name,Name,Name) -> Int -> [a] -> Q Bool
+executePreFunPost (prec,fun,posc) n listInp = (return (filterPrec pre n listInp []) >>=
+                                                (\list -> return (passFun fun n list []) >>=
+                                                  (\(x,y) -> return (testPost posc n x y)
+                                                    )))
+
 ----------------Functions to filter the list of cases by precondition---
 
-{-filterPrec :: Name -> Int -> [a] -> [a] -> [a]
+filterPrec :: Name -> Int -> [a] -> [a] -> [a]
 filterPrec _ _ [] solList = solList 
 filterPrec f_name n (t:ts) solList = filterPrec f_name n ts (solList++x)
      where x = if (testP f_name n t) then [t]
@@ -117,12 +128,16 @@ filterPrec f_name n (t:ts) solList = filterPrec f_name n ts (solList++x)
 
         
 ---------Appplying the function to get the corresponding outputs---------
-passFun :: Name -> Int -> [a] -> [a] -> [a]
-passFun _ _ [] solList = solList 
-passFun f_name n (t:ts) solList = passFun f_name n ts (solList++y)
+passFun :: Name -> Int -> [a] -> [b] -> ([a],[b])
+passFun f_name n list solList = (list, (passFunAux f_name n list solList))
+
+passFunAux :: Name -> Int -> [a] -> [b] -> [b]
+passFunAux _ _ [] solList = solList 
+passFunAux f_name n (t:ts) solList = passFunAux f_name n ts (solList++y)
      where y = testP f_name n t
 
 testP :: Name -> Int -> a -> b
+testP f_name n t = []
 testP f_name n t = $(lamE (tupleParam (listVar n)) (body f_name (listVar n))) t
 
 
@@ -133,4 +148,4 @@ testPost f_name n (t:ts) (o:os) = aux_bool && (testPost f_name n ts os)
      where aux_bool = post f_name n t o
 
 post :: Name -> a -> b -> Bool
-post f_name n t o = $(lamE ((tupleParam (listVar n))++[varP nameY]) (body2 f_name (listVar n)))-}
+post f_name n t o = $(lamE ((tupleParam (listVar n))++[varP nameY]) (body2 f_name (listVar n)))
