@@ -26,7 +26,7 @@ test_UUT i n
                     info <- extract_info (reify name)
                     return-}
      
-get_f_inp_types :: String -> [String]
+get_f_inp_types :: String -> Q [String]
 get_f_inp_types str = (lookupValueName str >>= 
                         (\(Just name) -> extract_info (reify name) >>=
                            (\(_,_,text) -> return(simplifyParsing text) >>=
