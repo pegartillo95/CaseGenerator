@@ -14,10 +14,23 @@ import UUTReaderUtilities
 
 --reads from the UUT archive the number of methods to tests 
 --them one by one.
-{-read_UUT = test_UUT 1 uutMethods
+read_UUT = test_UUT uutMethods
 
-test_UUT :: Int -> Int -> [Bool]
-test_UUT i n
+test_UUT :: Int -> Int -> Q [Bool]
+test_UUT 0 = return []
+test_UUT n = do
+                  strs <- get_f_inp_types ("uutPrec-"++(show i))
+                  (Maybe preN) <- lookupValueName ("uutPrec-"++(show i))
+                  (Maybe funN) <- lookupValueName ("uut-"++(show i))
+                  (Maybe postN) <- lookupValueName ("uutPost-"++(show i))
+                  ------------------MISSING PART TO GET inpParams
+                  sol <- executePreFunPost (preN,funN,postN)
+                  recSol <- test_UUT (n-1) (length strs) inpParams
+                  return sol++recSol
+
+
+
+
    | i < n = do Just name <- lookupValueName ("uutPrec-"++(show i))
                 info <- extract_info (reify name)
                 parsed_type <- (\(_,_,text) -> simplifyParsing text) info
@@ -139,6 +152,7 @@ passFunAux f_name n (t:ts) solList = passFunAux f_name n ts (solList++y)
 testP :: Name -> Int -> a -> b
 testP f_name n t = []
 testP f_name n t = $(lamE (tupleParam (listVar n)) (body f_name (listVar n))) t
+      where listVar n 
 
 
 -----Function to test the postcondition----------------------------------
