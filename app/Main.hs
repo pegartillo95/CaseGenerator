@@ -17,17 +17,21 @@ import UUTReader
 
 --Dumb main function
 main :: IO ()
-main = putStrLn $(lookupValueName "compose" >>= 
+main = putStrLn $(stringE $ lastMod "Hola.Nuevo.Adios.Type" "" "")
+
+{-main = putStrLn $(lookupValueName "tard" >>= 
                   (\(Just name) -> extract_info (reify name) >>=
                            (\(_,_,text) -> return(simplifyParsing text) >>=
                                   (\t -> return(extract_types t [] "") >>=
                                      (\(x:x2:xs) -> stringE x2
-                                       )))))
+                                       )))))-}
 
-{-main = putStrLn $(lookupValueName "stupid" >>= 
+{-main = putStrLn $(lookupValueName "tard" >>= 
                   (\(Just name) -> extract_info (reify name) >>=
                            (\(_,_,text) -> stringE text
                             )))-}
+
+
 
 {-main = putStrLn $(lookupValueName "stupid" >>=
                   (\(Just name) -> reify name >>=

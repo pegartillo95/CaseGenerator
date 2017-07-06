@@ -14,7 +14,7 @@ import UUTReaderUtilities
 
 --reads from the UUT archive the number of methods to tests 
 --them one by one.
-read_UUT = test_UUT uutMethods
+{-read_UUT = test_UUT uutMethods
 
 test_UUT :: Int -> Int -> Q [Bool]
 test_UUT 0 = return []
@@ -26,18 +26,7 @@ test_UUT n = do
                   ------------------MISSING PART TO GET inpParams
                   sol <- executePreFunPost (preN,funN,postN)
                   recSol <- test_UUT (n-1) (length strs) inpParams
-                  return sol++recSol
-
-
-
-
-   | i < n = do Just name <- lookupValueName ("uutPrec-"++(show i))
-                info <- extract_info (reify name)
-                parsed_type <- (\(_,_,text) -> simplifyParsing text) info
-                test_UUT (i+1) n
-   | otherwise = do Just name <- lookupValueName ("uutPrec-"++(show i))
-                    info <- extract_info (reify name)
-                    return-}
+                  return sol++recSol-}
      
 get_f_inp_types :: String -> Q [String]
 get_f_inp_types str = (lookupValueName str >>= 
@@ -73,8 +62,8 @@ extract_info m =
         parsing (ListT) = "[] "
         parsing ((TupleT 2)) = "(,) "
         parsing ((TupleT 3)) = "(,,) "
-        parsing ((VarT _)) = "Int " --GHC.Types.Int
-        parsing ((ConT x)) = (nameBase x) ++ " " --Si es necesario (nameModule x) ++ "." ++ 
+        parsing ((VarT _)) = "GHC.Types.Int "
+        parsing ((ConT x)) = (eliminateMaybe (nameModule x)) ++ "." ++(nameBase x) ++ " " 
         parsing _ = "UND "
 
 
@@ -85,6 +74,9 @@ simpleName nm =
         []          -> mkName s
         _:[]        -> mkName s
         _:t         -> mkName t
+
+eliminateMaybe :: Maybe a -> a
+eliminateMaybe (Just a) = a
 
 simplifyParsing :: String -> String
 simplifyParsing string = fst (auxiliarParse string)
@@ -123,9 +115,25 @@ extract_types (x1:xs) list building_t
 
 
 
+---------------Discover user defined types -----------------------------
+isUserDef :: [String] -> [Int]
+isUserDef [] = []
+isUserDef (t:ts) = (userDef t):(isUserDef ts)
+
+userDef :: String -> Int
+userDef str = if((lastMod str "" "")   == "UUT") then 1
+               else 0
+lastMod :: String -> String -> String -> String
+lastMod [] lastAcc sol = sol
+lastMod (t:ts) lastAcc sol
+     | t == '.' = lastMod ts "" lastAcc
+     | otherwise = lastMod ts (lastAcc ++ [t]) sol
+
+
+
 ----------------Execute precondition, function, postcondition ----------
 
-executePreFunPost :: (Name,Name,Name) -> Int -> [a] -> Q Bool
+{-executePreFunPost :: (Name,Name,Name) -> Int -> [a] -> Q Bool
 executePreFunPost (prec,fun,posc) n listInp = (return (filterPrec pre n listInp []) >>=
                                                 (\list -> return (passFun fun n list []) >>=
                                                   (\(x,y) -> return (testPost posc n x y)
@@ -162,4 +170,4 @@ testPost f_name n (t:ts) (o:os) = aux_bool && (testPost f_name n ts os)
      where aux_bool = post f_name n t o
 
 post :: Name -> a -> b -> Bool
-post f_name n t o = $(lamE ((tupleParam (listVar n))++[varP nameY]) (body2 f_name (listVar n)))
+post f_name n t o = $(lamE ((tupleParam (listVar n))++[varP nameY]) (body2 f_name (listVar n)))-}

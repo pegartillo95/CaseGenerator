@@ -118,7 +118,7 @@ newtype Gen a = MkGen{
 newtype QCGen = QCGen TheGen
 
 frequency :: [(Int, Arbitrary a)] -> Arbitrary a
-frequency [] = error "QuickCheck.frequency used with empty list"
+frequency [] = error "ERROR frequency used with empty list"
 frequency xs0 = choose (1, tot) >>= (`pick` xs0)
  where
   tot = sum (map fst xs0)
@@ -126,7 +126,7 @@ frequency xs0 = choose (1, tot) >>= (`pick` xs0)
   pick n ((k,x):xs)
     | n <= k    = x
     | otherwise = pick (n-k) xs
-  pick _ _  = error "QuickCheck.pick used with empty list"
+  pick _ _  = error "ERROR pick used with empty list"
 
 sized :: (Int -> Gen a) -> Gen a
 sized f = MkGen (\r n -> let MkGen m = f n in m r n)
@@ -137,7 +137,7 @@ choose rng = MkGen (\r _ -> let (x,_) = randomR rng r in x)
 
 -- | Generates one of the given values. The input list must be non-empty.
 elements :: [a] -> Gen a
-elements [] = error "QuickCheck.elements used with empty list"
+elements [] = error "ERROR elements used with empty list"
 elements xs = (xs !!) `fmap` choose (0, length xs - 1)
 
 -- Useful for getting at minBound and maxBound without having to
@@ -167,7 +167,7 @@ gen `suchThatMaybe` p = sized (try 0 . max 1)
 -- | Overrides the size parameter. Returns a generator which uses
 -- the given size instead of the runtime-size parameter.
 resize :: Int -> Gen a -> Gen a
-resize n _ | n < 0 = error "Test.QuickCheck.resize: negative size"
+resize n _ | n < 0 = error "ERROR resize: negative size"
 resize n (MkGen g) = MkGen (\r _ -> g r n)
 
 -----------------------------------------------------------------------------
