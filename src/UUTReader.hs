@@ -1,4 +1,4 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell, ScopedTypeVariables#-}
 
 module UUTReader where
 
@@ -23,11 +23,36 @@ test_UUT n = do
                   (Maybe preN) <- lookupValueName ("uutPrec-"++(show i))
                   (Maybe funN) <- lookupValueName ("uut-"++(show i))
                   (Maybe postN) <- lookupValueName ("uutPost-"++(show i))
+                  names <- strsToNames strs
                   ------------------MISSING PART TO GET inpParams
                   sol <- executePreFunPost (preN,funN,postN)
                   recSol <- test_UUT (n-1) (length strs) inpParams
                   return sol++recSol-}
-     
+
+---------------convert list of strings to list of names--------------------
+strsToNames :: [String] -> Q [Name]
+strsToNames [] = return []
+strsToNames (t:ts) = do (Just name) <- lookupValueName t
+                        recursive <- strsToNames ts
+                        return (name:recursive)
+
+-------------call to gen_all and gen_arbitrary ----------------------------
+{-callGens :: [Name] -> [Bool] -> [Int] -> Q Bool
+callGens [] [] [] = return True
+callGens (n:ns) (d:ds) (t:ts) = do _ <- callSingle n d t
+                                   rec <- callGens ns ds ts
+                                   return True
+
+callSingle :: Name -> Bool -> Int -> Q Bool
+callSingle n d t = if d then 
+                        if(t == 0) then
+                            do $(gen_arbitrary n)
+                        else do $(gen_allv n)
+                   else do
+                   return True-}
+
+
+---------------Get types for the input params------------------------------
 get_f_inp_types :: String -> Q [String]
 get_f_inp_types str = (lookupValueName str >>= 
                         (\(Just name) -> extract_info (reify name) >>=
@@ -116,27 +141,40 @@ extract_types (x1:xs) list building_t
 
 
 ---------------Discover user defined types -----------------------------
-isUserDef :: [String] -> [Int]
+isUserDef :: [String] -> [Bool]
 isUserDef [] = []
 isUserDef (t:ts) = (userDef t):(isUserDef ts)
 
-userDef :: String -> Int
-userDef str = if((lastMod str "" "")   == "UUT") then 1
-               else 0
+userDef :: String -> Bool
+userDef str = if((lastMod str "" "")   == "UUT") then True
+               else False
 lastMod :: String -> String -> String -> String
 lastMod [] lastAcc sol = sol
 lastMod (t:ts) lastAcc sol
      | t == '.' = lastMod ts "" lastAcc
      | otherwise = lastMod ts (lastAcc ++ [t]) sol
 
+---------------Get input from user for the desired tests---------------
+getWithMessage :: Int -> IO [Int]
+getWithMessage n = do
+                      putStrLn "Introduce 0,1,2 para cada argumento segun quieras aleatorio,smallest,ordered: "
+                      getGenType n
+
+getGenType :: Int -> IO [Int]
+getGenType 0 = return []
+getGenType n = do
+                 num :: Int <- readLn
+                 rec <- getGenType (n-1)
+                 return (num:rec)
+
 
 
 ----------------Execute precondition, function, postcondition ----------
 
-{-executePreFunPost :: (Name,Name,Name) -> Int -> [a] -> Q Bool
+{-executePreFunPost :: (Name,Name,Name) -> Int -> [a] -> IO ()
 executePreFunPost (prec,fun,posc) n listInp = (return (filterPrec pre n listInp []) >>=
                                                 (\list -> return (passFun fun n list []) >>=
-                                                  (\(x,y) -> return (testPost posc n x y)
+                                                  (\(x,y) -> testPost posc n x y
                                                     )))
 
 ----------------Functions to filter the list of cases by precondition---
@@ -164,10 +202,13 @@ testP f_name n t = $(lamE (tupleParam (listVar n)) (body f_name (listVar n))) t
 
 
 -----Function to test the postcondition----------------------------------
-testPost :: Name -> Int -> [a] -> [b] -> Bool
-testPost _ _ [] [] = True
-testPost f_name n (t:ts) (o:os) = aux_bool && (testPost f_name n ts os)
-     where aux_bool = post f_name n t o
+testPost :: Name -> Int -> [a] -> [b] -> IO ()
+testPost _ _ [] [] = putStrLn "Test finished correctly"
+testPost f_name n (t:ts) (o:os) = if (not aux_bool) then
+                                         do putStrLn ("Failed on function " ++ (nameBase f_name) ++ " with inputs " ++ (print ts) ++ " and output " ++ (print os))
+                                  else do
+                                  do testPost f_name n ts os
+                                      where aux_bool = post f_name n t o
 
 post :: Name -> a -> b -> Bool
 post f_name n t o = $(lamE ((tupleParam (listVar n))++[varP nameY]) (body2 f_name (listVar n)))-}

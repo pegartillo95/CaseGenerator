@@ -17,7 +17,11 @@ import UUTReader
 
 --Dumb main function
 main :: IO ()
-main = putStrLn $(stringE $ lastMod "Hola.Nuevo.Adios.Type" "" "")
+main = do 
+          list <- getWithMessage 3
+          print (head list)
+
+{-main = putStrLn $(stringE $ lastMod "Hola.Nuevo.Adios.Type" "" "")-}
 
 {-main = putStrLn $(lookupValueName "tard" >>= 
                   (\(Just name) -> extract_info (reify name) >>=
