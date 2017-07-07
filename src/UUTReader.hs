@@ -2,6 +2,7 @@
 
 module UUTReader where
 
+import Control.Monad
 import Data.String.Utils
 import Language.Haskell.TH
 import GHC.Generics
@@ -171,8 +172,8 @@ getGenType n = do
 
 ----------------Execute precondition, function, postcondition ----------
 
-{-executePreFunPost :: (Name,Name,Name) -> Int -> [a] -> IO ()
-executePreFunPost (prec,fun,posc) n listInp = (return (filterPrec pre n listInp []) >>=
+executePreFunPost :: (Name,Name,Name) -> Int -> [a] -> IO ()
+executePreFunPost (prec,fun,posc) n listInp = (return (filterPrec prec n listInp []) >>=
                                                 (\list -> return (passFun fun n list []) >>=
                                                   (\(x,y) -> testPost posc n x y
                                                     )))
@@ -182,7 +183,7 @@ executePreFunPost (prec,fun,posc) n listInp = (return (filterPrec pre n listInp 
 filterPrec :: Name -> Int -> [a] -> [a] -> [a]
 filterPrec _ _ [] solList = solList 
 filterPrec f_name n (t:ts) solList = filterPrec f_name n ts (solList++x)
-     where x = if (testP f_name n t) then [t]
+     where x = if (testP (varE f_name) (varE n) t) then [t]
                else []
 
         
@@ -193,22 +194,14 @@ passFun f_name n list solList = (list, (passFunAux f_name n list solList))
 passFunAux :: Name -> Int -> [a] -> [b] -> [b]
 passFunAux _ _ [] solList = solList 
 passFunAux f_name n (t:ts) solList = passFunAux f_name n ts (solList++y)
-     where y = testP f_name n t
+     where y = testP (varE f_name) (varE n) t
 
 testP :: Name -> Int -> a -> b
 testP f_name n t = []
-testP f_name n t = $(lamE (tupleParam (listVar n)) (body f_name (listVar n))) t
       where listVar n 
 
 
 -----Function to test the postcondition----------------------------------
-testPost :: Name -> Int -> [a] -> [b] -> IO ()
 testPost _ _ [] [] = putStrLn "Test finished correctly"
-testPost f_name n (t:ts) (o:os) = if (not aux_bool) then
-                                         do putStrLn ("Failed on function " ++ (nameBase f_name) ++ " with inputs " ++ (print ts) ++ " and output " ++ (print os))
-                                  else do
-                                  do testPost f_name n ts os
-                                      where aux_bool = post f_name n t o
 
 post :: Name -> a -> b -> Bool
-post f_name n t o = $(lamE ((tupleParam (listVar n))++[varP nameY]) (body2 f_name (listVar n)))-}
