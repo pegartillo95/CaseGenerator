@@ -25,6 +25,9 @@ test_UUT n = do
                   (Maybe funN) <- lookupValueName ("uut-"++(show i))
                   (Maybe postN) <- lookupValueName ("uutPost-"++(show i))
                   names <- strsToNames strs
+                  userD <- return (isUserDef strs)
+                  typesOfGen <- getWithMessage (length strs)
+                  ok <- callGens names userD typesOfGen
                   ------------------MISSING PART TO GET inpParams
                   sol <- executePreFunPost (preN,funN,postN)
                   recSol <- test_UUT (n-1) (length strs) inpParams
@@ -172,7 +175,7 @@ getGenType n = do
 
 ----------------Execute precondition, function, postcondition ----------
 
-executePreFunPost :: (Name,Name,Name) -> Int -> [a] -> IO ()
+{-executePreFunPost :: (Name,Name,Name) -> Int -> [a] -> IO ()
 executePreFunPost (prec,fun,posc) n listInp = (return (filterPrec prec n listInp []) >>=
                                                 (\list -> return (passFun fun n list []) >>=
                                                   (\(x,y) -> testPost posc n x y
@@ -215,4 +218,4 @@ testPost f_name n (t:ts) (o:os) = do
                                   where aux_bool = post f_name n t o
 
 post :: Name -> a -> b -> Bool
-post f_name n t o = $(lamE ((tupleParam (listVar n))++[varP nameY]) (body2 f_name (listVar n)))
+post f_name n t o = $(lamE ((tupleParam (listVar n))++[varP nameY]) (body2 f_name (listVar n)))-}
