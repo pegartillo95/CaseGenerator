@@ -175,7 +175,7 @@ getGenType n = do
 
 ----------------Execute precondition, function, postcondition ----------
 
-{-executePreFunPost :: (Name,Name,Name) -> Int -> [a] -> IO ()
+executePreFunPost :: (Name,Name,Name) -> Int -> [a] -> IO ()
 executePreFunPost (prec,fun,posc) n listInp = (return (filterPrec prec n listInp []) >>=
                                                 (\list -> return (passFun fun n list []) >>=
                                                   (\(x,y) -> testPost posc n x y
@@ -191,12 +191,12 @@ filterPrec f_name n (t:ts) solList = filterPrec f_name n ts (solList++x)
 
         
 ---------Appplying the function to get the corresponding outputs---------
-passFun :: Name -> Int -> [a] -> [b] -> ([a],[b])
-passFun f_name n list solList = (list, (passFunAux f_name n list solList))
+passFun :: Name -> Int -> [a] -> ([a],[b])
+passFun f_name n list = (list, (passFunAux f_name n list))
 
-passFunAux :: Name -> Int -> [a] -> [b] -> [b]
-passFunAux _ _ [] solList = solList 
-passFunAux f_name n (t:ts) solList = passFunAux f_name n ts (solList++y)
+passFunAux :: Name -> Int -> [a] -> [b]
+passFunAux _ _ [] = []
+passFunAux f_name n (t:ts)= y:(passFunAux f_name n ts)
      where y = testP f_name n t
 
 testP :: Name -> Int -> a -> b
@@ -218,4 +218,4 @@ testPost f_name n (t:ts) (o:os) = do
                                   where aux_bool = post f_name n t o
 
 post :: Name -> a -> b -> Bool
-post f_name n t o = $(lamE ((tupleParam (listVar n))++[varP nameY]) (body2 f_name (listVar n)))-}
+post f_name n t o = $(lamE ((tupleParam (listVar n))++[varP nameY]) (body2 f_name (listVar n)))
