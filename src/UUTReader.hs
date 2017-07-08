@@ -183,7 +183,7 @@ executePreFunPost (prec,fun,posc) n listInp = (return (filterPrec prec n listInp
 filterPrec :: Name -> Int -> [a] -> [a] -> [a]
 filterPrec _ _ [] solList = solList 
 filterPrec f_name n (t:ts) solList = filterPrec f_name n ts (solList++x)
-     where x = if (testP (varE f_name) (varE n) t) then [t]
+     where x = if (testP f_name n t) then [t]
                else []
 
         
@@ -194,14 +194,25 @@ passFun f_name n list solList = (list, (passFunAux f_name n list solList))
 passFunAux :: Name -> Int -> [a] -> [b] -> [b]
 passFunAux _ _ [] solList = solList 
 passFunAux f_name n (t:ts) solList = passFunAux f_name n ts (solList++y)
-     where y = testP (varE f_name) (varE n) t
+     where y = testP f_name n t
 
 testP :: Name -> Int -> a -> b
 testP f_name n t = []
-      where listVar n 
+testP f_name n t = $(lamE (tupleParam (listVar n)) (body f_name (listVar n))) t
 
 
 -----Function to test the postcondition----------------------------------
+testPost :: (Show a, Show b) => Name -> Int -> [a] -> [b] -> IO ()
 testPost _ _ [] [] = putStrLn "Test finished correctly"
+testPost f_name n (t:ts) (o:os) = do
+                                  when (not aux_bool) $ do
+                                        putStr ("Failed on function " ++ (nameBase f_name) ++ " with inputs ")
+                                        print ts
+                                        putStr " and output "
+                                        print os
+                                        putStrLn ""
+                                  testPost f_name n ts os
+                                  where aux_bool = post f_name n t o
 
 post :: Name -> a -> b -> Bool
+post f_name n t o = $(lamE ((tupleParam (listVar n))++[varP nameY]) (body2 f_name (listVar n)))
