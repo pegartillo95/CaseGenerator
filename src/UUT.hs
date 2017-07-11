@@ -2,15 +2,17 @@ module UUT where
 
 import TemplateAllv
 
-uutMethods::Int
-uutMethods = 1;
-
 uutName::String
 uutName = "compose"
 
 uutNargs ::Int
 uutNargs = 2
 
-uutPrec = True
+uutPrec :: [a] -> [b] -> Bool
+uutPrec xs ys = True
 
-uutMethod = compose
+uutMethod :: [a] -> [b] -> [(a,b)]
+uutMethod xs ys = compose xs ys
+
+uutPost :: [a] -> [b] -> [(a,b)] -> Bool
+uutPost xs ys z = True

@@ -13,25 +13,15 @@ import TemplateArbitrary
 import UUT
 import UUTReaderUtilities
 
---reads from the UUT archive the number of methods to tests 
---them one by one.
-{-read_UUT = test_UUT uutMethods
-
-test_UUT :: Int -> Int -> Q [Bool]
-test_UUT 0 = return []
-test_UUT n = do
-                  strs <- get_f_inp_types ("uutPrec-"++(show i))
-                  (Maybe preN) <- lookupValueName ("uutPrec-"++(show i))
-                  (Maybe funN) <- lookupValueName ("uut-"++(show i))
-                  (Maybe postN) <- lookupValueName ("uutPost-"++(show i))
-                  names <- strsToNames strs
-                  userD <- return (isUserDef strs)
-                  typesOfGen <- getWithMessage (length strs)
-                  ok <- callGens names userD typesOfGen
-                  ------------------MISSING PART TO GET inpParams
-                  sol <- executePreFunPost (preN,funN,postN)
-                  recSol <- test_UUT (n-1) (length strs) inpParams
-                  return sol++recSol-}
+{-test_UUT :: Q Bool
+test_UUT = do
+              strs <- get_f_inp_types ("uutPrec"++(show i))
+              names <- strsToNames strs
+              userD <- return (isUserDef strs)
+              typesOfGen <- getWithMessage (length strs)
+              ok <- callGens names userD typesOfGen
+              ------------------MISSING PART TO GET inpParams
+              sol <- executePreFunPost inpList-}
 
 ---------------convert list of strings to list of names--------------------
 strsToNames :: [String] -> Q [Name]
@@ -175,46 +165,41 @@ getGenType n = do
 
 ----------------Execute precondition, function, postcondition ----------
 
-executePreFunPost :: (Name,Name,Name) -> Int -> [a] -> IO ()
-executePreFunPost (prec,fun,posc) n listInp = (return (filterPrec prec n listInp []) >>=
-                                                (\list -> return (passFun fun n list []) >>=
-                                                  (\(x,y) -> testPost posc n x y
-                                                    )))
+executePreFunPost listInp = (return (filterPrec listInp []) >>=
+                              (\list -> return (passFun list) >>=
+                                (\(x,y) -> testPost x y
+                                  )))
 
 ----------------Functions to filter the list of cases by precondition---
 
-filterPrec :: Name -> Int -> [a] -> [a] -> [a]
-filterPrec _ _ [] solList = solList 
-filterPrec f_name n (t:ts) solList = filterPrec f_name n ts (solList++x)
-     where x = if (testP f_name n t) then [t]
+filterPrec [] solList = solList 
+filterPrec (t:ts) solList = filterPrec ts (solList++x)
+     where x = if (testPrec t) then [t]
                else []
+
+testPrec t = $(lamE (tupleParam (listVar uutNargs)) (body "uutPrec" (listVar uutNargs))) t
 
         
 ---------Appplying the function to get the corresponding outputs---------
-passFun :: Name -> Int -> [a] -> ([a],[b])
-passFun f_name n list = (list, (passFunAux f_name n list))
+passFun list = (list, (passFunAux list))
 
-passFunAux :: Name -> Int -> [a] -> [b]
-passFunAux _ _ [] = []
-passFunAux f_name n (t:ts)= y:(passFunAux f_name n ts)
-     where y = testP f_name n t
+passFunAux [] = []
+passFunAux (t:ts)= y:(passFunAux ts)
+     where y = testFun t
 
-testP :: Name -> Int -> a -> b
-testP f_name n t = $(lamE (tupleParam (listVar uutNargs)) (body uutName (listVar uutNargs))) t
+testFun t = $(lamE (tupleParam (listVar uutNargs)) (body "uutMethod" (listVar uutNargs))) t
 
 
 -----Function to test the postcondition----------------------------------
-testPost :: (Show a, Show b) => Name -> Int -> [a] -> [b] -> IO ()
-testPost _ _ [] [] = putStrLn "Test finished correctly"
-testPost f_name n (t:ts) (o:os) = do
-                                  when (not aux_bool) $ do
-                                        putStr ("Failed on function " ++ (nameBase f_name) ++ " with inputs ")
+testPost [] [] = putStrLn "Test finished correctly"
+testPost (t:ts) (o:os) = do
+                                  when (not aux_bool_q) $ do
+                                        putStr ("Failed on function " ++ uutName ++ " with inputs ")
                                         print ts
                                         putStr " and output "
                                         print os
                                         putStrLn ""
-                                  testPost f_name n ts os
-                                  where aux_bool = post f_name n t o
+                                  testPost ts os
+                                  where aux_bool_q = post t o
 
-post :: Name -> a -> b -> Bool
-post f_name n t o = $(lamE ((tupleParam (listVar n))++[varP nameY]) (body2 f_name (listVar n)))
+post t o = $(lamE ((tupleParam (listVar uutNargs))++[varP nameY]) (body2 "uutPost" (listVar uutNargs))) t o

@@ -13,12 +13,15 @@ tupleParam :: [Name] -> [PatQ]
 tupleParam listOfVar = [tupP (map varP listOfVar)]
 
 body :: String -> [Name] -> ExpQ
-body f listOfVar = appsE ((varE 'compose):(map varE listOfVar))
-{-body f_name listOfVar = do (Just name) <- lookupValueName f_name
-	                         (appsE ((varE name):(map varE listOfVar)))-}
+body f_name listOfVar = (lookupValueName f_name >>=
+                          (\(Just name)->(appsE ((varE name):(map varE listOfVar)))
+	                        ))
+	                       
 
-body2 :: Name -> [Name]-> ExpQ
-body2 f_name listOfVar = (appsE ((varE f_name):((map varE listOfVar)++[varE nameY])))
+body2 :: String -> [Name]-> ExpQ
+body2 f_name listOfVar = (lookupValueName f_name >>=
+                          (\(Just name)->(appsE ((varE name):((map varE listOfVar)++[varE nameY])))
+	                        ))
 
 nameY :: Name
 nameY = mkName "y"
