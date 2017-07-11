@@ -200,8 +200,7 @@ passFunAux f_name n (t:ts)= y:(passFunAux f_name n ts)
      where y = testP f_name n t
 
 testP :: Name -> Int -> a -> b
-testP f_name n t = []
-testP f_name n t = $(lamE (tupleParam (listVar n)) (body f_name (listVar n))) t
+testP f_name n t = $(lamE (tupleParam (listVar uutNargs)) (body uutName (listVar uutNargs))) t
 
 
 -----Function to test the postcondition----------------------------------

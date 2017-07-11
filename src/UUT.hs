@@ -1,13 +1,16 @@
 module UUT where
 
+import TemplateAllv
+
 uutMethods::Int
 uutMethods = 1;
 
-uutName_1::String
-uutName_1 = "compose"
+uutName::String
+uutName = "compose"
 
-data Fruit = Apple | Orange
+uutNargs ::Int
+uutNargs = 2
 
-tard :: Fruit -> Int
-tard Apple = 0
-tard Orange = 1
+uutPrec = True
+
+uutMethod = compose
