@@ -203,7 +203,7 @@ simpleName nm =
 --------Composing of 2 lists--------------
 ------------------------------------------
 
-compose ::[a] -> [b] -> [(a,b)]
+compose :: [a] -> [b] -> [(a,b)]
 compose xs ys = (e:lattice)
   where e:lattice = concat $ diags 0 xs ys
 

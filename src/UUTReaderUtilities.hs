@@ -1,9 +1,14 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell, ScopedTypeVariables #-}
 
 module UUTReaderUtilities where
 
 import Language.Haskell.TH
 import TemplateAllv
+import Sized
+import Arbitrary
+import Data.String.Utils
+import System.IO.Unsafe
+import UUT
 
 ----------------------constantes default------------------------------
 numCases::Int
@@ -34,10 +39,38 @@ body2 f_name listOfVar = (lookupValueName f_name >>=
 nameY :: Name
 nameY = mkName "y"
 
+-------------zip depending on the number of input params------------------
+zipNargs
+
+-------Generate the list of functs depending on getWithMessage------------
+getListFunc :: [ExpQ]
+getListFunc = listFuncts (unsafePerformIO (getWithMessage uutNargs))
 
 
+listFuncts :: [Int] -> [ExpQ]
+listFuncts [] = []
+listFuncts (x:xs)
+	| (x == 0) = arbitraryFunct:(listFuncts xs)
+	| (x == 1) = sizedFunct:(listFuncts xs)
+	| otherwise = smallestFunct:(listFuncts xs)
+            where
+                  arbitraryFunct = varE 'allv --TODO change to arbitrary
+                  sizedFunct = varE 'sized
+                  smallestFunct = varE 'smallest
 
 
+---------------Get input from user for the desired tests------------------
+getWithMessage :: Int -> IO [Int]
+getWithMessage n = do
+                      putStrLn "Introduce 0,1,2 para cada argumento segun quieras aleatorio,smallest,sized: "
+                      getGenType n
+
+getGenType :: Int -> IO [Int]
+getGenType 0 = return []
+getGenType n = do
+                 num :: Int <- readLn
+                 rec <- getGenType (n-1)
+                 return (num:rec)
 
 ---------------Get types for the input params------------------------------
 get_f_inp_types :: String -> Q [String]

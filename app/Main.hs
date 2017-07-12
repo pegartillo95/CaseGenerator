@@ -9,6 +9,9 @@ import Arbitrary
 import TemplateAllv
 import TemplateArbitrary
 import UUTReader
+import UUT
+import UUTReaderUtilities
+import System.IO.Unsafe
 
 -----------------------------------------------------------------------------------
 -- | Programming generic size and generic enumeration of values
@@ -17,9 +20,7 @@ import UUTReader
 
 --Dumb main function
 main :: IO ()
-main = do 
-          list <- getWithMessage 3
-          print (head list)
+main = print (unsafePerformIO (getWithMessage uutNargs))
 
 {-main = putStrLn $(stringE $ lastMod "Hola.Nuevo.Adios.Type" "" "")-}
 

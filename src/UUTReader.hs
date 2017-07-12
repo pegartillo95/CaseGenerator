@@ -15,15 +15,45 @@ import UUTReaderUtilities
 
 {-test_UUT :: Q Bool
 test_UUT = do
-              strs <- get_f_inp_types ("uutPrec"++(show i))
+              strs <- get_f_inp_types "uutPrec"
               names <- strsToNames strs
               userD <- return (isUserDef strs)
-              typesOfGen <- getWithMessage (length strs)
               ok <- callGens names userD typesOfGen
-              ------------------MISSING PART TO GET inpList
+              inpList <- getInpList
               sol <- executePreFunPost inpList-}
 
----------------convert list of strings to list of names--------------------
+---------------------One for each type of execution----------------------
+{-test_UUT_sized : Q Bool
+test_UUT_sized = do
+                    strs <- get_f_inp_types "uutPrec"
+                    names <- strsToNames strs
+                    userD <- return (isUserDef strs)
+                    ok <- callGens names userD typesOfGen
+                    ------------------MISSING PART TO GET inpList
+                    sol <- executePreFunPost inpList
+
+test_UUT_smallest : Q Bool
+test_UUT_smallest = do
+                       strs <- get_f_inp_types "uutPrec"
+                       names <- strsToNames strs
+                       userD <- return (isUserDef strs)
+                       ok <- callGens names userD typesOfGen
+                       ------------------MISSING PART TO GET inpList
+                       sol <- executePreFunPost inpList
+
+test_UUT_arbitrary : Q Bool
+test_UUT_arbitrary = do
+                        strs <- get_f_inp_types "uutPrec"
+                        names <- strsToNames strs
+                        userD <- return (isUserDef strs)
+                        ok <- callGens names userD typesOfGen
+                        ------------------MISSING PART TO GET inpList
+                        sol <- executePreFunPost inpList-}
+
+--------------generate the test cases-------------------------------------
+getInpList = $(appsE (zipNargs:getListFunc))
+
+---------------convert list of strings to list of names-------------------
 strsToNames :: [String] -> Q [Name]
 strsToNames [] = return []
 strsToNames (t:ts) = do (Just name) <- lookupValueName t
@@ -38,16 +68,9 @@ callGens (n:ns) (d:ds) (t:ts) = do _ <- callSingle n d t
                                    return True
 
 callSingle :: Name -> Bool -> Int -> Q Bool
-callSingle n d t = if d then 
-                        if(t == 0) then
-                            do $(gen_arbitrary n)
-                        else do $(gen_allv n)
-                   else do
+callSingle n d t = if d then do _ <- $(gen_arbitrary n)
+                                _ <- $(gen_allv n)
                    return True-}
-
----------------Get the list of input parameters----------------------------
-
-
 
 ---------------Discover user defined types -----------------------------
 isUserDef :: [String] -> [Bool]
@@ -62,21 +85,6 @@ lastMod [] lastAcc sol = sol
 lastMod (t:ts) lastAcc sol
      | t == '.' = lastMod ts "" lastAcc
      | otherwise = lastMod ts (lastAcc ++ [t]) sol
-
----------------Get input from user for the desired tests---------------
-getWithMessage :: Int -> IO [Int]
-getWithMessage n = do
-                      putStrLn "Introduce 0,1,2 para cada argumento segun quieras aleatorio,smallest,ordered: "
-                      getGenType n
-
-getGenType :: Int -> IO [Int]
-getGenType 0 = return []
-getGenType n = do
-                 num :: Int <- readLn
-                 rec <- getGenType (n-1)
-                 return (num:rec)
-
-
 
 ----------------Execute precondition, function, postcondition ----------
 
