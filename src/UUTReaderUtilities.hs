@@ -2,6 +2,7 @@
 
 module UUTReaderUtilities where
 
+import Control.Monad
 import Language.Haskell.TH
 import TemplateAllv
 import Sized
@@ -18,6 +19,10 @@ smallestSize::Int
 smallestSize = 4
 
 ----------------------auxiliar functs for template hasskell-----------
+
+lVar :: [Name]
+lVar = listVar uutNargs
+
 listVar :: Int -> [Name]
 listVar 0 = []
 listVar n = (mkName ("x"++ show n)):(listVar (n-1))
@@ -28,19 +33,34 @@ tupleParam listOfVar = [tupP (map varP listOfVar)]
 body :: String -> [Name] -> ExpQ
 body f_name listOfVar = (lookupValueName f_name >>=
                           (\(Just name)->(appsE ((varE name):(map varE listOfVar)))
-	                        ))
-	                       
+                            ))
+                           
 
 body2 :: String -> [Name]-> ExpQ
 body2 f_name listOfVar = (lookupValueName f_name >>=
                           (\(Just name)->(appsE ((varE name):((map varE listOfVar)++[varE nameY])))
-	                        ))
+                             ))
 
 nameY :: Name
 nameY = mkName "y"
 
 -------------zip depending on the number of input params------------------
-zipNargs
+zipN :: Int -> ExpQ
+zipN n = [| let zp = $(mkZip n [| zp |]) in zp |]
+
+mkZip ::Int -> ExpQ -> ExpQ
+mkZip n name = lamE pYs (caseE (tupE eYs) [m1,m2])
+      where
+        pXs = map varP (listNames "x" n)
+        eXs = map varE (listNames "x" n)
+        pYs = map varP (listNames "y" n)
+        eYs = map varE (listNames "y" n)
+        pXSs = map varP (listNames "xs" n)
+        eXSs = map varE (listNames "xs" n)
+        pcons x xs = [p|$x : $xs|]
+        b = [| $(tupE eXs) : $(appsE(name : eXSs))|]
+        m1 = match (tupP (zipWith pcons pXs pXSs)) (normalB b) []
+        m2 = match (tupP (take n (repeat wildP))) (normalB (conE $ mkName "[]")) []
 
 -------Generate the list of functs depending on getWithMessage------------
 getListFunc :: [ExpQ]
@@ -50,9 +70,9 @@ getListFunc = listFuncts (unsafePerformIO (getWithMessage uutNargs))
 listFuncts :: [Int] -> [ExpQ]
 listFuncts [] = []
 listFuncts (x:xs)
-	| (x == 0) = arbitraryFunct:(listFuncts xs)
-	| (x == 1) = sizedFunct:(listFuncts xs)
-	| otherwise = smallestFunct:(listFuncts xs)
+    | (x == 0) = arbitraryFunct:(listFuncts xs)
+    | (x == 1) = sizedFunct:(listFuncts xs)
+    | otherwise = smallestFunct:(listFuncts xs)
             where
                   arbitraryFunct = varE 'allv --TODO change to arbitrary
                   sizedFunct = varE 'sized

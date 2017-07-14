@@ -51,7 +51,7 @@ test_UUT_arbitrary = do
                         sol <- executePreFunPost inpList-}
 
 --------------generate the test cases-------------------------------------
-getInpList = $(appsE (zipNargs:getListFunc))
+{-getInpList = $(appsE ((zipN uutNargs):getListFunc))-}
 
 ---------------convert list of strings to list of names-------------------
 strsToNames :: [String] -> Q [Name]
@@ -100,7 +100,7 @@ filterPrec (t:ts) solList = filterPrec ts (solList++x)
      where x = if (testPrec t) then [t]
                else []
 
-testPrec t = $(lamE (tupleParam (listVar uutNargs)) (body "uutPrec" (listVar uutNargs))) t
+testPrec t = $(lamE (tupleParam lVar) (body "uutPrec" lVar)) t
 
         
 ---------Appplying the function to get the corresponding outputs---------
@@ -110,7 +110,7 @@ passFunAux [] = []
 passFunAux (t:ts)= y:(passFunAux ts)
      where y = testFun t
 
-testFun t = $(lamE (tupleParam (listVar uutNargs)) (body "uutMethod" (listVar uutNargs))) t
+testFun t = $(lamE (tupleParam lVar) (body "uutMethod" lVar)) t
 
 
 -----Function to test the postcondition----------------------------------
@@ -125,4 +125,4 @@ testPost (t:ts) (o:os) = do
                                   testPost ts os
                                   where aux_bool_q = post t o
 
-post t o = $(lamE ((tupleParam (listVar uutNargs))++[varP nameY]) (body2 "uutPost" (listVar uutNargs))) t o
+post t o = $(lamE ((tupleParam lVar)++[varP nameY]) (body2 "uutPost" lVar)) t o
