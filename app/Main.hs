@@ -20,7 +20,11 @@ import System.IO.Unsafe
 
 --Dumb main function
 main :: IO ()
-main = print (unsafePerformIO (getWithMessage uutNargs))
+main = do e <- runQ (getInpProve)
+          print e
+
+
+{-main = print (unsafePerformIO (getWithMessage uutNargs))-}
 
 {-main = putStrLn $(stringE $ lastMod "Hola.Nuevo.Adios.Type" "" "")-}
 

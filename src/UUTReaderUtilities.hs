@@ -45,7 +45,7 @@ nameY :: Name
 nameY = mkName "y"
 
 -------------zip depending on the number of input params------------------
-zipN :: Int -> ExpQ
+{-zipN :: Int -> ExpQ
 zipN n = [| let zp = $(mkZip n [| zp |]) in zp |]
 
 mkZip ::Int -> ExpQ -> ExpQ
@@ -60,9 +60,20 @@ mkZip n name = lamE pYs (caseE (tupE eYs) [m1,m2])
         pcons x xs = [p|$x : $xs|]
         b = [| $(tupE eXs) : $(appsE(name : eXSs))|]
         m1 = match (tupP (zipWith pcons pXs pXSs)) (normalB b) []
-        m2 = match (tupP (take n (repeat wildP))) (normalB (conE $ mkName "[]")) []
+        m2 = match (tupP (take n (repeat wildP))) (normalB (conE $ mkName "[]")) []-}
 
 -------Generate the list of functs depending on getWithMessage------------
+
+getListFuncC :: [ExpQ]
+getListFuncC = [varE $ mkName "f1", [|2|], [|4|]]
+
+f1 :: Int -> Int -> Int
+f1 x y
+   | x == 2 && y == 3 = 5
+   | otherwise = 7
+
+f2 = True
+
 getListFunc :: [ExpQ]
 getListFunc = listFuncts (unsafePerformIO (getWithMessage uutNargs))
 

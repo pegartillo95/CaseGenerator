@@ -52,6 +52,7 @@ test_UUT_arbitrary = do
 
 --------------generate the test cases-------------------------------------
 {-getInpList = $(appsE ((zipN uutNargs):getListFunc))-}
+getInpProve = (appsE getListFuncC)
 
 ---------------convert list of strings to list of names-------------------
 strsToNames :: [String] -> Q [Name]

@@ -16,3 +16,6 @@ uutMethod xs ys = compose xs ys
 
 uutPost :: [a] -> [b] -> [(a,b)] -> Bool
 uutPost xs ys z = True
+
+nombres:: [String]
+nombres = ["pp1", "pp2"]
