@@ -15,115 +15,63 @@ import UUTReaderUtilities
 
 {-test_UUT :: Q Bool
 test_UUT = do
-              strs <- get_f_inp_types "uutPrec"
-              names <- strsToNames strs
-              userD <- return (isUserDef strs)
-              ok <- callGens names userD typesOfGen
-              inpList <- getInpList
-              sol <- executePreFunPost inpList-}
-
----------------------One for each type of execution----------------------
-{-test_UUT_sized : Q Bool
-test_UUT_sized = do
-                    strs <- get_f_inp_types "uutPrec"
-                    names <- strsToNames strs
-                    userD <- return (isUserDef strs)
-                    ok <- callGens names userD typesOfGen
-                    ------------------MISSING PART TO GET inpList
-                    sol <- executePreFunPost inpList
-
-test_UUT_smallest : Q Bool
-test_UUT_smallest = do
-                       strs <- get_f_inp_types "uutPrec"
-                       names <- strsToNames strs
-                       userD <- return (isUserDef strs)
-                       ok <- callGens names userD typesOfGen
-                       ------------------MISSING PART TO GET inpList
-                       sol <- executePreFunPost inpList
-
-test_UUT_arbitrary : Q Bool
-test_UUT_arbitrary = do
-                        strs <- get_f_inp_types "uutPrec"
-                        names <- strsToNames strs
-                        userD <- return (isUserDef strs)
-                        ok <- callGens names userD typesOfGen
-                        ------------------MISSING PART TO GET inpList
-                        sol <- executePreFunPost inpList-}
-
---------------generate the test cases-------------------------------------
-{-getInpList = $(appsE ((zipN uutNargs):getListFunc))-}
-getInpProve = (appsE getListFuncC)
-
----------------convert list of strings to list of names-------------------
-strsToNames :: [String] -> Q [Name]
-strsToNames [] = return []
-strsToNames (t:ts) = do (Just name) <- lookupValueName t
-                        recursive <- strsToNames ts
-                        return (name:recursive)
+              callGenerators
+              callGenTest uutTestMode
+              callGenPrueba
+              mainDriver-}
 
 -------------call to gen_all and gen_arbitrary ----------------------------
-{-callGens :: [Name] -> [Bool] -> [Int] -> Q Bool
-callGens [] [] [] = return True
-callGens (n:ns) (d:ds) (t:ts) = do _ <- callSingle n d t
-                                   rec <- callGens ns ds ts
-                                   return True
-
-callSingle :: Name -> Bool -> Int -> Q Bool
-callSingle n d t = if d then do _ <- $(gen_arbitrary n)
-                                _ <- $(gen_allv n)
-                   return True-}
-
----------------Discover user defined types -----------------------------
-isUserDef :: [String] -> [Bool]
-isUserDef [] = []
-isUserDef (t:ts) = (userDef t):(isUserDef ts)
-
-userDef :: String -> Bool
-userDef str = if((lastMod str "" "")   == "UUT") then True
-               else False
-lastMod :: String -> String -> String -> String
-lastMod [] lastAcc sol = sol
-lastMod (t:ts) lastAcc sol
-     | t == '.' = lastMod ts "" lastAcc
-     | otherwise = lastMod ts (lastAcc ++ [t]) sol
-
-----------------Execute precondition, function, postcondition ----------
-
-executePreFunPost listInp = (return (filterPrec listInp []) >>=
-                              (\list -> return (passFun list) >>=
-                                (\(x,y) -> testPost x y
-                                  )))
-
-----------------Functions to filter the list of cases by precondition---
-
-filterPrec [] solList = solList 
-filterPrec (t:ts) solList = filterPrec ts (solList++x)
-     where x = if (testPrec t) then [t]
-               else []
-
-testPrec t = $(lamE (tupleParam lVar) (body "uutPrec" lVar)) t
-
-        
----------Appplying the function to get the corresponding outputs---------
-passFun list = (list, (passFunAux list))
-
-passFunAux [] = []
-passFunAux (t:ts)= y:(passFunAux ts)
-     where y = testFun t
-
-testFun t = $(lamE (tupleParam lVar) (body "uutMethod" lVar)) t
+callGenerators :: Q Bool 
+callGenerators = do 
+                    _ <- $(gen_allv_str_list (notDefTypes uutTypesStr))
+                    _ <- $(gen_arb_str_list (notDefTypes uutTypesStr))
+                    return True
 
 
------Function to test the postcondition----------------------------------
-testPost [] [] = putStrLn "Test finished correctly"
-testPost (t:ts) (o:os) = do
-                                  when (not aux_bool_q) $ do
-                                        putStr ("Failed on function " ++ uutName ++ " with inputs ")
-                                        print ts
-                                        putStr " and output "
-                                        print os
-                                        putStrLn ""
-                                  testPost ts os
-                                  where aux_bool_q = post t o
+-------------Generate test function -------------------------------------
+callGenTest x
+  | x == 0 = callGenTest_sized
+  | x == 1 = callGenTest_smallest
+  | otherwise = callGenTest_arb
 
-post t o = $(lamE ((tupleParam lVar)++[varP nameY]) (body2 "uutPost" lVar)) t o
+callGenTest_sized = $(genTest 0)
+callGenTest_smallest = $(genTest 1)
+callGenTest_arb = $(genTest 2)
+
+genTest :: Int -> Q [Dec] --The integer means sized(0), smallest(1), arbitrary(2)
+genTest x = do
+               prueba <- mkName ("prueba")
+               uutMethods <- mkName "uutNameMethods"
+               listArg <- mkName "listArg"
+               test <- testN prueba uutMethods listArg
+               wherecl <- funD listArg [clause [] (normalB(build_where x)) []]
+               args <- (varP uutMethods)
+               let name = mkName $ "test"
+               return [FunD name [Clause [args] (NormalB test) [wherecl]]]
+
+testN :: Name -> Name -> Name -> ExpQ
+testN pName nameMeth listArg = do appsE $ map varE (pName:nameMeth:listArg)
+
+build_where :: Int -> ExpQ
+build_where x
+  | x==0 = appsE ((zipN uutNargs):(take uutNargs (repeat(appsE [varE 'sized]))))
+  | x==1 = appsE ((zipN uutNargs):(take uutNargs (repeat(appsE [varE 'smallest]))))
+  | x==2 = appsE ((zipN uutNargs):(take uutNargs (repeat(appsE [varE 'arbitrary]))))
+
+--------------------Generate pruebas function------------------------------------
+
+genPruebas :: Q [Dec]
+genPruebas = do
+                  name <- mkName ("prueba")
+                  f <- varP $ mkName "f"
+                  pruebaEmpty <- appsE ((varE 'return):[listE []])
+                  prueba <- pruebaN --TODO prueba for non empty list
+                  emptyList <- listP []
+                  args1 <- (f:[emptyList])
+                  args2 <- --TODO args2 the one of the recursive call
+                  return $ FunD name [Clause [args1] (NormalB pruebaEmpty) [], Clause [args2] (NormalB prueba) []]
+
+----------------Generate the main driver loop --------------------------------------
+mainDriver = $(gen_driver_loop)
+
+gen_driver_loop = appsE ((varE 'test):[varE 'uutMethods])

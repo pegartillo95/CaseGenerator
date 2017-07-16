@@ -22,6 +22,18 @@ type Func_name = Name
 --Tuple that pairs the func_name and the function to generate the body
 type Func = (Func_name, Gen_func)
 
+gen_allv_str_list :: [String] -> Q [Dec]
+gen_allv_str_list [] = return []
+gen_allv_str_list (x:xs) = do
+                              dec <- gen_allv_str x
+                              rec <- gen_allv_str_list xs
+                              return (dec:rec)
+
+gen_allv_str :: String -> Q Dec
+gen_allv_str str = do
+                     (Just name) <- lookupValueName str
+                     gen_allv name
+
 -- Generate an intance of the class Allv for the type typName
 gen_allv :: Name -> Q Dec
 gen_allv typName =

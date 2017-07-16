@@ -20,13 +20,14 @@ import System.IO.Unsafe
 
 --Dumb main function
 main :: IO ()
-main = do e <- runQ (getInpProve)
-          print e
+main = putStrLn $(stringE $ lastMod "Hola.Nuevo.Adios.Type" "" "")
+{-main = do e <- runQ (getInpProve)
+          print e-}
 
 
 {-main = print (unsafePerformIO (getWithMessage uutNargs))-}
 
-{-main = putStrLn $(stringE $ lastMod "Hola.Nuevo.Adios.Type" "" "")-}
+
 
 {-main = putStrLn $(lookupValueName "tard" >>= 
                   (\(Just name) -> extract_info (reify name) >>=
