@@ -6,16 +6,16 @@ uutNargs ::Int
 uutNargs = 2
 
 uutTypesStr :: [String]
-uutTypesStr = ["[Int]", "[Int]"]
+uutTypesStr = ["Int", "Int"]
 
 uutMethods :: [String]
 uutMethods = ["uutPrec", "uutMethod", "uutPost"]
 
-uutPrec :: [a] -> [b] -> Bool
-uutPrec xs ys = True
+uutPrec :: Int -> Int -> Bool
+uutPrec x y = True
 
-uutMethod :: [a] -> [b] -> [(a,b)]
-uutMethod xs ys = compose xs ys
+uutMethod :: Int -> Int -> Int
+uutMethod x y = x+y
 
-uutPost :: [a] -> [b] -> [(a,b)] -> Bool
-uutPost xs ys z = True
+uutPost :: Int -> Int -> Int -> Bool
+uutPost x y z = True

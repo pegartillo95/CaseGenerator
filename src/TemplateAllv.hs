@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module TemplateAllv (
-     gen_allv
+     gen_allv_str_list
     , compose
     )where
 

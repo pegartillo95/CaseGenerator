@@ -2,7 +2,7 @@
 
 module TemplateArbitrary (
     MyExp(..)
-    , gen_arbitrary
+    , gen_arb_str_list
     )where
 
 import Arbitrary

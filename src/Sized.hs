@@ -10,6 +10,10 @@ import qualified Data.Set as S
 import qualified Data.PQueue.Min as Q
 import System.IO.Unsafe (unsafePerformIO)
 
+------------------------Num test cases------------------------
+uutNumCases :: Int
+uutNumCases = 1000
+
 --Class Allv
 class Allv a where
   allv :: [a]
@@ -27,6 +31,12 @@ instance Sized Char where
 instance Allv Char where
   allv = ['a'..'z']
 
+instance Sized Bool where
+  size x = 1
+
+instance Allv Bool where
+   allv = [True, False]  
+
 
 
 -- | This is the exported, visible class that inherits from Allv.
@@ -36,8 +46,8 @@ class (Allv a) => Sized a where
   sized n m = take n (filter (\x-> (size x) <= m) allv)
 
   --This function takes an integer n and returns the n first elements of the "allv" list
-  smallest::Int->[a]
-  smallest n = take n allv
+  smallest :: [a]
+  smallest = take uutNumCases allv
 
 
 
