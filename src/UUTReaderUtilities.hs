@@ -30,27 +30,6 @@ plain (x:xs)
   | x == '[' || x == ']' = plain xs
   | otherwise = x:(plain xs)
 
-
--------------zip depending on the number of input params------------------
-zipN_f = $(zipN)
-
-------------------generate test function--------------------------------------
-genTest :: Q [Dec]
-genTest = do
-               prueba <- return (mkName "prueba")
-               listArg <- return (mkName "listArg")
-               test <- testN prueba listArg
-               wherecl <- funD listArg [clause [] (normalB build_where) []]
-               args <- (varP listArg)
-               let name = mkName "test"
-               return [FunD name [Clause [args] (NormalB test) [wherecl]]]
-
-testN :: Name -> Name -> ExpQ
-testN pName listArg = do appsE (map varE (pName:[listArg]))
-
-build_where :: ExpQ
-build_where = appsE ((varE 'zipN_f):(take uutNargs (repeat(appsE [varE 'smallest]))))
-
 --------------generators for auxiliar prueba functions-------------------------
 prec_lambda = $(lamE [(tupP (map varP (listVar uutNargs)))] (appsE ((varE 'uutPrec):(map varE (listVar uutNargs)))))
 
@@ -70,3 +49,9 @@ pre_f listArgs = filter (prec_lambda) listArgs
 
 pos_f [] [] = []
 pos_f (l:ls) (o:os) = (pos_lambda l o):(pos_f ls os)
+
+--------------calls the function that generates test function------------
+$(genTest)
+
+----------------------generates driver loop-----------------------------
+gen_driver_loop = appsE ((varE 'test):[varE 'uutMethods])

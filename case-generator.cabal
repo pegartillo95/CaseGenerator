@@ -23,6 +23,7 @@ library
                       , UUT
                       , UUTReaderUtilities
                       , UUTReaderUtilitiesDeep
+                      , UUTReaderUtilitiesDeeper
   build-depends:       base >= 4.7 && < 5
                        , containers >= 0.5.6.2
                        , pqueue >= 1.3.1
