@@ -14,32 +14,17 @@ import UUT
 import UUTReaderUtilities
 
 test_UUT :: Q [Bool]
-test_UUT = {-do
-              callGenerators
-              callGenTest
-              callGenAuxPrueba-}
-              mainDriver
+test_UUT = mainDriver
 
 ----------------Generate the main driver loop --------------------------------------
 mainDriver = $(gen_driver_loop)
 
--------------call to gen_all and gen_arbitrary ----------------------------
+-------------call to gen_all and gen_arbitrary -------------------------------------
 $(gen_allv_str_list (notDefTypes uutTypesStr))
 $(gen_arb_str_list (notDefTypes uutTypesStr))
 
-{-callGenerators :: Q Bool 
-callGenerators = do 
-                    $(gen_allv_str_list (notDefTypes uutTypesStr))
-                    $(gen_arb_str_list (notDefTypes uutTypesStr))
-                    return True-}
+--------------Printing the ending information---------------------------------------
 
-
-
-
-{-callGenTest = $(genTest)-}
-
---------------------Generar funciones auxiliares de prueba-------------
-{-callGenAuxPrueba = do
-                      $(gen_prec_lambda (head uutMethods))
-                      $(gen_fun_f (head $ tail uutMethods))
-                      $(gen_pos_lambda (head $ tail $ tail uutMethods) uutNargs)-}
+printInfo :: [Bool] -> String
+printInfo xs = "Tried " ++ show (length xs) ++ " tests " ++ show (length (filter (==True) xs))
+           ++ " of them passed " ++ show (length (filter (==False) xs)) ++ " of them failed"

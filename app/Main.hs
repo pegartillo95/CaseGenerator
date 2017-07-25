@@ -20,4 +20,6 @@ import System.IO.Unsafe
 
 --Dumb main function
 main :: IO ()
-main = putStrLn $(stringE "Main function")
+main = putStrLn $(test_UUT >>=
+                   (\x -> stringE $ printInfo x
+                     ))

@@ -47,7 +47,7 @@ class (Allv a) => Sized a where
 
   --This function takes an integer n and returns the n first elements of the "allv" list
   smallest :: [a]
-  smallest = take uutNumCases allv
+  smallest = take uutNumCases (concat $ repeat allv)
 
 
 

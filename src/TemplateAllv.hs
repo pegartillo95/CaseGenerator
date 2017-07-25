@@ -243,23 +243,3 @@ diags i xs ys
         tup k        = (x,y)
                        where x = xs !! k 
                              y = ys !! (i-k)
-
-
-{-diags :: Int -> Int -> Int -> [a] -> [b] -> [[(a,b)]]
-diags _ _ _ [] [] = [[]]
-diags i dx dy xs ys
-    | fullDiag     = [tup k | k <- [0..i]] : diags (i+1) dx dy xs ys
-    | finiteFirst  = diags (i-1) dx     (dy+1) xs  ysr
-    | finiteSecond = diags (i-1) (dx+1) dy     xsr ys
-    | otherwise    = diags (i-2) (dx+1) (dy+1) xsr ysr
-
-  where xs'          = drop i xs
-        ys'          = drop i ys
-        xsr          = tail xs
-        ysr          = tail ys
-        fullDiag     = not (null xs') && not (null ys')
-        finiteFirst  = null xs' && not (null ys')
-        finiteSecond = not (null xs') && null ys'
-        tup k        = (x,y)
-                       where x = xs !! k 
-                             y = ys !! (i-k)-}
