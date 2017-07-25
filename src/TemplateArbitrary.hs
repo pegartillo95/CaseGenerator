@@ -2,7 +2,7 @@
 
 module TemplateArbitrary (
     MyExp(..)
-    , gen_arb_str_list
+    , gen_arb_str_listQ
     )where
 
 import Arbitrary
@@ -37,6 +37,10 @@ type Gen_func = Name -> [ExpQ]
 type Func_name = Name   
 --Tuple that pairs the func_name and the function to generate the body
 type Func = (Func_name, Gen_func)
+
+gen_arb_str_listQ :: Q [String] -> Q [Dec]
+gen_arb_str_listQ xs = do list <- xs
+                          gen_arb_str_list list
 
 gen_arb_str_list :: [String] -> Q [Dec]
 gen_arb_str_list [] = return []

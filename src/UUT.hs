@@ -16,4 +16,4 @@ uutMethod :: Int -> Int -> Int
 uutMethod x y = x+y
 
 uutPost :: Int -> Int -> Int -> Bool
-uutPost x y z = False
+uutPost x y z = True

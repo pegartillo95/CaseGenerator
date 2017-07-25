@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module TemplateAllv (
-     gen_allv_str_list
+     gen_allv_str_listQ
     , compose
     )where
 
@@ -22,6 +22,10 @@ type Gen_func = [Int] -> [Name]  -> [Name] -> [ExpQ]
 type Func_name = Name   
 --Tuple that pairs the func_name and the function to generate the body
 type Func = (Func_name, Gen_func)
+
+gen_allv_str_listQ :: Q [String] -> Q [Dec]
+gen_allv_str_listQ xs = do list <- xs
+                           gen_allv_str_list list
 
 gen_allv_str_list :: [String] -> Q [Dec]
 gen_allv_str_list [] = return []

@@ -20,11 +20,10 @@ test_UUT = mainDriver
 mainDriver = $(gen_driver_loop)
 
 -------------call to gen_all and gen_arbitrary -------------------------------------
-$(gen_allv_str_list (notDefTypes uutTypesStr))
-$(gen_arb_str_list (notDefTypes uutTypesStr))
+$(gen_allv_str_listQ (notDefTypesQMonad (get_f_inp_types (head uutMethods))))
 
 --------------Printing the ending information---------------------------------------
 
 printInfo :: [Bool] -> String
 printInfo xs = "Tried " ++ show (length xs) ++ " tests " ++ show (length (filter (==True) xs))
-           ++ " of them passed " ++ show (length (filter (==False) xs)) ++ " of them failed"
+           ++ " of them passed " ++ show (length (filter (==False) xs)) ++   " of them failed"
