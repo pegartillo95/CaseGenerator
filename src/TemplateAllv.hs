@@ -8,6 +8,7 @@ module TemplateAllv (
 import Language.Haskell.TH
 import Data.Char
 import Sized
+import UUT
 
 ------------------------------------------------------------------------------------
 -------------------- Usefull alias for some data types------------------------------

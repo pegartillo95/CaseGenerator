@@ -20,5 +20,4 @@ import System.IO.Unsafe
 
 --Dumb main function
 main :: IO ()
-main = do e <- runQ (getInpProve)
-          print e
+main = putStrLn $(stringE "Main function")

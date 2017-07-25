@@ -13,7 +13,7 @@ import TemplateArbitrary
 import UUT
 import UUTReaderUtilities
 
-test_UUT :: Q Bool
+test_UUT :: Q [Bool]
 test_UUT = {-do
               callGenerators
               callGenTest

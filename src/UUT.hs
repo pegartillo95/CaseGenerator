@@ -1,7 +1,5 @@
 module UUT where
 
-import TemplateAllv
-
 uutNargs ::Int
 uutNargs = 2
 

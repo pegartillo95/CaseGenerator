@@ -21,8 +21,8 @@ notDefTypes (x:xs)
 
 isUserDef :: String -> Bool
 isUserDef str
-   | str == "Int" || str == "Char" || str == "Bool" = True
-   | otherwise = False
+   | str == "Int" || str == "Char" || str == "Bool" = False
+   | otherwise = True
 
 plain :: String -> String
 plain [] = []
