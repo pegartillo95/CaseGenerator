@@ -14,6 +14,11 @@ data ArraysException = IndexOutOfRange Int
    deriving (Show, Typeable)
 instance Exception ArraysException
 
+-- Array length
+
+len::Array a -> Int
+len = snd
+
 -- Ask for the element in a position
 get::Array a -> Int -> a
 get a i = if isNothing e then throw (IndexOutOfRange i) else fromJust e

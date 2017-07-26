@@ -11,6 +11,12 @@ import qualified Sets as S
 import qualified Sequences as Q
 import Assertion
 
+uutNargs :: Int
+uutNargs = 3
+
+uutMethods :: [String]
+uutMethods = ["uutPrec", "uutMethod", "uutPost"]
+
 uutPrec x m a = evalA $
   And
     (FTerm (Aplic
