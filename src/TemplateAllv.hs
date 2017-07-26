@@ -76,10 +76,10 @@ gen_allv typName =
                             --functions in template haskell
                             mapE = varE 'map
                             composeE = varE 'compose
-                            allvE = varE 'allv
+                            allvE = appsE [varE 'allv]
                             moveHead (x1:x2:xs) = x2:x1:xs
 
-                            allvFunc 1 = [appsE [allvE]]
+                            allvFunc 1 = [allvE]
                             allvFunc n = [appsE (composeE:[allvE] ++ allvFunc (n-1))]
 
 
