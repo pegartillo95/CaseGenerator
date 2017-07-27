@@ -25,7 +25,7 @@ genTest = do
                wherecl <- funD listArg [clause [] (normalB build_where) []]
                args <- (varP listArg)
                let name = mkName "test"
-               return [FunD name [Clause [args] (NormalB test) [wherecl]]]
+               return [FunD name [Clause [] (NormalB test) [wherecl]]]
 
 testN :: Name -> Name -> ExpQ
 testN pName listArg = do appsE (map varE (pName:[listArg]))

@@ -3,9 +3,6 @@ module UUT where
 uutNargs ::Int
 uutNargs = 2
 
-uutTypesStr :: [String]
-uutTypesStr = ["Int", "Int"]
-
 uutMethods :: [String]
 uutMethods = ["uutPrec", "uutMethod", "uutPost"]
 
@@ -17,3 +14,8 @@ uutMethod x y = x+y
 
 uutPost :: Int -> Int -> Int -> Bool
 uutPost x y z = True
+
+f x y = x <= y
+
+g :: Ord a => a -> a -> Bool
+g = \x y -> x <= y

@@ -35,19 +35,20 @@ plain (x:xs)
   | otherwise = x:(plain xs)
 
 --------------generators for auxiliar prueba functions-------------------------
-prec_lambda = $(lamE [(tupP (map varP (listVar uutNargs)))] (appsE ((varE 'uutPrec):(map varE (listVar uutNargs)))))
+--cambiar lambdas por funciones
+prec_lambda $(tupP (map varP (listVar uutNargs))) = $(appsE ((varE 'uutPrec):(map varE (listVar uutNargs))))
 
 fun_f filtered_list = map fun_f_aux filtered_list
 
-fun_f_aux = $(lamE [tupP (map varP (listVar uutNargs))] (appsE ((varE 'uutMethod):(map varE (listVar uutNargs)))))
+fun_f_aux $(tupP (map varP (listVar uutNargs))) = $(appsE ((varE 'uutMethod):(map varE (listVar uutNargs))))
 
-pos_lambda = $(lamE [(tupP (map varP (listVar uutNargs))), varP $ mkName "o"] (appsE ((varE 'uutPost):((map varE (listVar uutNargs))++[varE $ mkName "o"]))))
+pos_lambda $(tupP (map varP (listVar uutNargs))) $(varP $ mkName "o") = $(appsE ((varE 'uutPost):((map varE (listVar uutNargs))++[varE $ mkName "o"]))) 
 
 --------------------Prueba function------------------------------------
-prueba listArgs = do
-                    filtered_pre <- return (pre_f listArgs)
-                    output <- return (fun_f filtered_pre)
-                    return (pos_f filtered_pre output)
+prueba listArgs = pos_f filtered_pre output
+              where 
+                     filtered_pre = pre_f listArgs
+                     output = fun_f filtered_pre
 
 pre_f listArgs = filter (prec_lambda) listArgs
 

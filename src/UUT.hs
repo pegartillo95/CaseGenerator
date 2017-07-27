@@ -17,6 +17,9 @@ uutNargs = 3
 uutMethods :: [String]
 uutMethods = ["uutPrec", "uutMethod", "uutPost"]
 
+uutName :: String
+uutName = "insert" --TODO usar al principio del output
+
 uutPrec x m a = evalA $
   And
     (FTerm (Aplic
