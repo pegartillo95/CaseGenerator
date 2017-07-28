@@ -2,7 +2,6 @@
 
 module TemplateAllv (
      gen_allv_str_listQ
-    , compose
     )where
 
 import Language.Haskell.TH
@@ -216,34 +215,3 @@ simpleName nm =
         _:[]        -> mkName s
         _:t         -> mkName t
 
-------------------------------------------
---------Composing of 2 lists--------------
-------------------------------------------
-
-compose :: [a] -> [b] -> [(a,b)]
-compose xs ys = (e:lattice)
-  where e:lattice = concat $ diags 0 xs ys
-
---
--- It builds the lattice of tuples from two lists, each one may be either
--- finite or infinite
-
-
-diags :: Int -> [a] -> [b] -> [[(a,b)]]
-diags _ [] [] = [[]]
-diags i xs ys
-    | fullDiag     = [tup k | k <- [0..i]] : diags (i+1) xs ys
-    | finiteFirst  = diags (i-1) xs  ysr
-    | finiteSecond = diags (i-1) xsr ys
-    | otherwise    = diags (i-2) xsr ysr
-
-  where xs'          = drop i xs
-        ys'          = drop i ys
-        xsr          = tail xs
-        ysr          = tail ys
-        fullDiag     = not (null xs') && not (null ys')
-        finiteFirst  = null xs' && not (null ys')
-        finiteSecond = not (null xs') && null ys'
-        tup k        = (x,y)
-                       where x = xs !! k 
-                             y = ys !! (i-k)

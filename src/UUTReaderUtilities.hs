@@ -36,13 +36,13 @@ plain (x:xs)
 
 --------------generators for auxiliar prueba functions-------------------------
 --cambiar lambdas por funciones
-prec_lambda $(tupP (map varP (listVar uutNargs))) = $(appsE ((varE 'uutPrec):(map varE (listVar uutNargs))))
+prec_lambda $(linkedTupleP uutNargs) = $(appsE ((varE 'uutPrec):(map varE (listVar uutNargs))))
 
 fun_f filtered_list = map fun_f_aux filtered_list
 
-fun_f_aux $(tupP (map varP (listVar uutNargs))) = $(appsE ((varE 'uutMethod):(map varE (listVar uutNargs))))
+fun_f_aux $(linkedTupleP uutNargs) = $(appsE ((varE 'uutMethod):(map varE (listVar uutNargs))))
 
-pos_lambda $(tupP (map varP (listVar uutNargs))) $(varP $ mkName "o") = $(appsE ((varE 'uutPost):((map varE (listVar uutNargs))++[varE $ mkName "o"]))) 
+pos_lambda $(linkedTupleP uutNargs) $(varP $ mkName "o") = $(appsE ((varE 'uutPost):((map varE (listVar uutNargs))++[varE $ mkName "o"]))) 
 
 --------------------Prueba function------------------------------------
 prueba listArgs = pos_f filtered_pre output

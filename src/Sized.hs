@@ -1,8 +1,9 @@
-{-# LANGUAGE DefaultSignatures, DeriveGeneric, TypeOperators, FlexibleContexts #-}
+{-# LANGUAGE DefaultSignatures, DeriveGeneric, TypeOperators, FlexibleContexts, FlexibleInstances #-}
 
 module Sized
     ( Allv(..)
       , Sized(..)
+      , compose
     ) where
 
 import GHC.Generics
@@ -35,7 +36,29 @@ instance Sized Bool where
   size x = 1
 
 instance Allv Bool where
-   allv = [True, False]  
+   allv = [True, False]
+
+instance Sized a => Sized [a] where
+   size deriving Generics
+
+instance Allv a => Allv [a] where
+   allv = [] : map (\(x,xs) -> x:xs) $ compose (allv::a) (allv::[a])
+
+instance (Allv a, Allv b) => Allv (a,b) where
+   allv = compose allv allv
+
+instance (Allv a, Allv b, Allv c) => Allv (a,(b,c)) where
+   allv = compose allv (compose allv allv)
+
+instance (Allv a, Allv b, Allv c, Allv d) => Allv (a,(b,(c,d))) where
+   allv = compose allv (compose allv (compose allv allv))
+
+instance (Allv a, Allv b, Allv c, Allv d, Allv e) => Allv (a,(b,(c,(d,e)))) where
+   allv = compose allv (compose allv (compose allv (compose allv allv)))
+
+instance (Allv a, Allv b, Allv c, Allv d, Allv e, Allv f) => Allv (a,(b,(c,(d,(e,f))))) where
+   allv = compose allv (compose allv (compose allv (compose allv (compose allv allv))))
+
 
 
 
@@ -80,3 +103,34 @@ instance (GSized f) => GSized (M1 i c f) where
 instance Sized a => GSized (K1 i a) where
   gsize (K1 x) = size x
 
+------------------------------------------
+--------Composing of 2 lists--------------
+------------------------------------------
+
+compose :: [a] -> [b] -> [(a,b)]
+compose xs ys = (e:lattice)
+  where e:lattice = concat $ diags 0 xs ys
+
+--
+-- It builds the lattice of tuples from two lists, each one may be either
+-- finite or infinite
+
+
+diags :: Int -> [a] -> [b] -> [[(a,b)]]
+diags _ [] [] = [[]]
+diags i xs ys
+    | fullDiag     = [tup k | k <- [0..i]] : diags (i+1) xs ys
+    | finiteFirst  = diags (i-1) xs  ysr
+    | finiteSecond = diags (i-1) xsr ys
+    | otherwise    = diags (i-2) xsr ysr
+
+  where xs'          = drop i xs
+        ys'          = drop i ys
+        xsr          = tail xs
+        ysr          = tail ys
+        fullDiag     = not (null xs') && not (null ys')
+        finiteFirst  = null xs' && not (null ys')
+        finiteSecond = not (null xs') && null ys'
+        tup k        = (x,y)
+                       where x = xs !! k 
+                             y = ys !! (i-k)
