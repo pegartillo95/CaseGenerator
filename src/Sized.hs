@@ -108,8 +108,8 @@ instance Sized a => GSized (K1 i a) where
 ------------------------------------------
 
 compose :: [a] -> [b] -> [(a,b)]
-compose xs ys = (e:lattice)
-  where e:lattice = concat $ diags 0 xs ys
+compose xs ys = allpairs
+  where allpairs = concat $ diags 0 xs ys
 
 --
 -- It builds the lattice of tuples from two lists, each one may be either
