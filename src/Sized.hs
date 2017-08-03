@@ -38,11 +38,11 @@ instance Sized Bool where
 instance Allv Bool where
    allv = [True, False]
 
-instance Sized a => Sized [a] where
-   size deriving Generics
+{-instance Sized a => Sized [a] where
+   size deriving Generics-}
 
-instance Allv a => Allv [a] where
-   allv = [] : map (\(x,xs) -> x:xs) $ compose (allv::a) (allv::[a])
+{-instance Allv a => Allv [a] where
+   allv = [] : (map (\(x,xs) -> x:xs) $ compose (allv::a) (allv::[a]))-}
 
 instance (Allv a, Allv b) => Allv (a,b) where
    allv = compose allv allv

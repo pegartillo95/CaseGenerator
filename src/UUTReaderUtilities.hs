@@ -56,10 +56,10 @@ pos_f [] [] = []
 pos_f (l:ls) (o:os) = (pos_lambda l o):(pos_f ls os)
 
 --------------calls the function that generates test function------------
-$(genTest)
+-- $(genTest)
 
 ----------------------generates driver loop-----------------------------
-gen_driver_loop = appsE ((varE 'test):[varE 'uutMethods])
+-- gen_driver_loop = appsE ((varE 'test):[varE 'uutMethods])
 
 ----------------Get types for the input params------------------------------
 get_f_inp_types :: String -> Q [String]
@@ -90,6 +90,7 @@ extract_info m =
          first_parse ((ForallT _ _ x)) = parsing x
          first_parse x = parsing x
   
+         parsing ((AppT (ConT x) (VarT y))) = "{" ++ (parsing (ConT x)) ++ "_" ++ (parsing (VarT y)) ++ "}"  
          parsing ((AppT x y)) = (parsing x) ++ (parsing y)
          parsing (ArrowT) = "-> "
          parsing (ListT) = "[] "
@@ -119,10 +120,9 @@ auxiliarParse s
      | startswith "[]" (lstrip s) = ("[" ++ (fst call2) ++ "]", snd call2)
      | startswith "(,)" (lstrip s) = ("(" ++ (fst call3) ++ "," ++ (fst (call 0 (snd call3))) ++ ")" , snd (call 0 (snd call3)))
      | startswith "(,,)" (lstrip s) = ("(" ++ (fst call4) ++ "," ++ (fst (call 0 (snd call4))) ++ "," ++ (fst (call 0 (snd (call 0 (snd call4))))) ++ ")" , snd (call 0 (snd (call 0 (snd call4)))))
-     | startswith "(,,,)" (lstrip s) = ("(" ++ (fst call5) ++ "," ++ (fst (call 0 (snd call5))) ++ "," ++ (fst (call 0 (snd (call 0 (snd call5))))) ++ "," ++ (fst (call 0 (snd (call 0 (snd (call 0 (snd call5))))))) ++ ")" , snd (call 0 (snd (call 0 (snd (call 0 (snd call5)))))) )
+     | startswith "(,,,)" (lstrip s) = ("(" ++ (fst call5) ++ "," ++ (fst (call 0 (snd call5))) ++ "," ++ (fst (call 0 (snd (call 0 (snd call5))))) ++ "," ++ (fst (call 0 (snd (call 0 (snd (call 0 (snd call5))))))) ++ ")" , snd (call 0 (snd (call 0 (snd (call 0 (snd call5)))))))
+     | startswith "{" (lstrip s) = compoundVar (lstrip s) ""
      | otherwise = baseVar (lstrip s) ""
- 
- 
  
      where call2 = call 2 s
            call3 = call 3 s
@@ -132,9 +132,13 @@ auxiliarParse s
            stringSkip n (x:xs)
               | n == 0 = (x:xs)
               | otherwise = stringSkip (n-1) xs
-           baseVar s formedS
-              | (head s) /= ' '  = baseVar (tail s) (formedS ++ [head s])
-              | otherwise = (formedS , (lstrip (tail s)))
+           baseVar (x:xs) formedS
+              | x /= ' '  = baseVar xs (formedS ++ [x])
+              | otherwise = (formedS , (lstrip xs))
+           compoundVar (x:xs) formedS
+              | x == '}' = (formedS , (lstrip xs))
+              | x == '{' = compoundVar xs formedS
+              | otherwise = compoundVar xs (formedS ++ [x])
 
  -------------Extracts the input types from the simplify parsing----------
  
@@ -142,5 +146,6 @@ extract_types :: String -> [String] -> String -> [String]
 extract_types [] list _ = list
 extract_types (x1:xs) list building_t
       | (x1 == ' ') || (x1 == '>') = extract_types xs list building_t
-      | (x1 == '-')= extract_types xs (list++[building_t]) ""
+      | (x1 == '-') = extract_types xs (list++[building_t]) ""
+      | (x1 == '_') = extract_types xs list (building_t ++ " ")
       | otherwise = extract_types xs list (building_t++[x1])

@@ -11,7 +11,7 @@ import UUT
 zipN :: ExpQ
 zipN = [| let zp = $(mkZip uutNargs [| zp |]) in zp |]
 
-mkZip ::Int -> ExpQ -> ExpQ
+mkZip :: Int -> ExpQ -> ExpQ
 mkZip n name = lamE pYs (caseE (tupE eYs) [m1,m2])
       where
         pXs = map varP (listNames "x" n)
