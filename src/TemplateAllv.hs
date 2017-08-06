@@ -38,6 +38,25 @@ gen_allv_str str = do
                      (Just name) <- lookupValueName str
                      gen_allv name
 
+{-gen_allv_str :: String -> Q Dec
+gen_allv_str str = do
+                     listStr <- return(split_str str "")
+                     listNames <- strs_to_names list_str
+                     (t:ts) <- return (transformToType listNames)
+                     genType <- return (foldl appT t ts) 
+                     gen_allv genType
+                        where
+                          split_str (x:xs) saved
+                            | x == ' ' = saved:(split_str xs "")
+                            |otherwise = split_str xs (saved++x)
+                          strs_to_names [] = return []   
+                          strs_to_names (x:xs) = do 
+                                                   (Just n) <- lookupValueName x
+                                                   rec <- strs_to_names xs
+                                                   (n:rec)
+                          transformToType (x:xs) = (conT x):(map varT xs)-}
+
+
 -- Generate an intance of the class Allv for the type typName
 gen_allv :: Name -> Q Dec
 gen_allv typName =
