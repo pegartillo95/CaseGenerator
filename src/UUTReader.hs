@@ -13,14 +13,14 @@ import TemplateArbitrary
 import UUT
 import UUTReaderUtilities
 
--- test_UUT :: Q [Bool]
--- test_UUT = mainDriver
+test_UUT :: Q [Bool]
+test_UUT = test
 
 ----------------Generate the main driver loop --------------------------------------
 -- mainDriver = $(gen_driver_loop)
 
 -------------call to gen_all and gen_arbitrary -------------------------------------
--- $(gen_allv_str_listQ (notDefTypesQMonad (get_f_inp_types (head uutMethods))))
+$(gen_allv_str_listQ (notDefTypesQMonad (get_f_inp_types (head uutMethods))))
 
 --------------Printing the ending information---------------------------------------
 

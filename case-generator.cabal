@@ -23,7 +23,6 @@ library
                       , UUT
                       , UUTReaderUtilities
                       , UUTReaderUtilitiesDeep
-                      , UUTReaderUtilitiesDeeper
                       , Arrays
                       , Assertion
                       , Bags

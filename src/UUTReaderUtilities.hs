@@ -34,32 +34,29 @@ plain (x:xs)
   | x == '[' || x == ']' = plain xs
   | otherwise = x:(plain xs)
 
---------------generators for auxiliar prueba functions-------------------------
---cambiar lambdas por funciones
-prec_lambda $(linkedTupleP uutNargs) = $(appsE ((varE 'uutPrec):(map varE (listVar uutNargs))))
-
-fun_f filtered_list = map fun_f_aux filtered_list
-
-fun_f_aux $(linkedTupleP uutNargs) = $(appsE ((varE 'uutMethod):(map varE (listVar uutNargs))))
-
-pos_lambda $(linkedTupleP uutNargs) $(varP $ mkName "o") = $(appsE ((varE 'uutPost):((map varE (listVar uutNargs))++[varE $ mkName "o"]))) 
-
 --------------------Prueba function------------------------------------
 prueba listArgs = pos_f filtered_pre output
               where 
                      filtered_pre = pre_f listArgs
                      output = fun_f filtered_pre
 
-pre_f listArgs = filter (prec_lambda) listArgs
+pre_f listArgs = filter (prec_f_aux) listArgs
+
+fun_f filtered_list = map fun_f_aux filtered_list
 
 pos_f [] [] = []
-pos_f (l:ls) (o:os) = (pos_lambda l o):(pos_f ls os)
+pos_f (l:ls) (o:os) = (pos_f_aux l o):(pos_f ls os)
 
---------------calls the function that generates test function------------
--- $(genTest)
+--------------generators for auxiliar prueba functions-------------------------
+prec_f_aux $(linkedTupleP uutNargs) = $(appsE ((varE 'uutPrec):(map varE (listVar uutNargs))))
 
-----------------------generates driver loop-----------------------------
--- gen_driver_loop = appsE ((varE 'test):[varE 'uutMethods])
+fun_f_aux $(linkedTupleP uutNargs) = $(appsE ((varE 'uutMethod):(map varE (listVar uutNargs))))
+
+pos_f_aux $(linkedTupleP uutNargs) $(varP $ mkName "o") = $(appsE ((varE 'uutPost):((map varE (listVar uutNargs))++[varE $ mkName "o"]))) 
+
+----------------------test function-------------------------------------
+test = prueba listArgs
+        where listArgs = smallest
 
 ----------------Get types for the input params------------------------------
 get_f_inp_types :: String -> Q [String]
@@ -69,7 +66,7 @@ get_f_inp_types str = do (Just name) <- lookupValueName str
                          return (extract_types t [] "")
  
  
- --------Auxiliar functions for get_f_inp_types ------------------------------
+ --------Auxiliar functions for getFInpTypes ------------------------------
  
 extract_info :: InfoQ -> Q(Name, Name, String)
 extract_info m =
