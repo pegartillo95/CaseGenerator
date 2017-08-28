@@ -46,6 +46,7 @@ gen_allv_str str = do
                      genType <- return (foldl appT t ts) 
                      gen_allv genType
                         where
+                          split_str [] saved = saved
                           split_str (x:xs) saved
                             | x == ' ' = saved:(split_str xs "")
                             |otherwise = split_str xs (saved++x)
