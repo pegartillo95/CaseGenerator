@@ -4,7 +4,7 @@ module UUTReaderUtilities where
 
 import Control.Monad
 import Language.Haskell.TH
-import TemplateAllv
+--import TemplateAllv
 import Sized
 import Arbitrary
 import Data.String.Utils
@@ -44,8 +44,10 @@ pre_f listArgs = filter (prec_f_aux) listArgs
 
 fun_f filtered_list = map fun_f_aux filtered_list
 
-pos_f [] [] = []
-pos_f (l:ls) (o:os) = (pos_f_aux l o):(pos_f ls os)
+pos_f inputs outputs = zipWith pos_f_aux inputs outputs
+
+--pos_f [] [] = []
+--pos_f (l:ls) (o:os) = (pos_f_aux l o):(pos_f ls os)
 
 --------------generators for auxiliar prueba functions-------------------------
 prec_f_aux $(linkedTupleP uutNargs) = $(appsE ((varE 'uutPrec):(map varE (listVar uutNargs))))

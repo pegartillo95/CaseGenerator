@@ -13,7 +13,7 @@ import TemplateArbitrary
 import UUT
 import UUTReaderUtilities
 
-test_UUT :: Q [Bool]
+test_UUT :: [Bool]
 test_UUT = test
 
 -------------call to gen_all and gen_arbitrary -------------------------------------
