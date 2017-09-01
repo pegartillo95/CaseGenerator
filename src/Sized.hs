@@ -1,5 +1,5 @@
 {-# LANGUAGE DefaultSignatures, DeriveGeneric, TypeOperators, FlexibleContexts, FlexibleInstances #-}
-
+{-# LANGUAGE QuasiQuotes #-}
 module Sized
     ( Allv(..)
       , Sized(..)
@@ -10,6 +10,8 @@ import GHC.Generics
 import qualified Data.Set as S
 import qualified Data.PQueue.Min as Q
 import System.IO.Unsafe (unsafePerformIO)
+import qualified Data.Map as Map
+import Unsafe.TrueName
 
 ------------------------Num test cases------------------------
 uutNumCases :: Int
@@ -60,7 +62,22 @@ instance (Allv a, Allv b, Allv c, Allv d, Allv e) => Allv (a,(b,(c,(d,e)))) wher
 instance (Allv a, Allv b, Allv c, Allv d, Allv e, Allv f) => Allv (a,(b,(c,(d,(e,f))))) where
    allv = compose allv (compose allv (compose allv (compose allv (compose allv allv))))
 
+{-| Tis is the Data.Map type. We must have instances of Sized and Allv for it
+ 
+data Map k a  = Bin !Int !k a !(Map k a) !(Map k a)
+              | Tip
+-}
 
+tip = [truename| ''Map.Map Tip |]
+bin = [truename| ''Map.Map Bin |]
+
+instance (Allv k, Allv a) => Allv (Map.Map k a) where
+   allv = tip : map flatten (compose allv (compose (compose allv allv) (compose allv allv)))
+          where flatten (i,((k,a),(l,r))) = bin i k a l r
+
+instance (Allv k, Allv a) => Sized (Map.Map k a) where
+   size [truename| ''Map.Map Tip |] = 0
+   size ([truename| ''Map.Map Bin | _ _ _ l r |]) = 1 + size l + size r
 
 
 -- | This is the exported, visible class that inherits from Allv.
@@ -72,9 +89,6 @@ class (Allv a) => Sized a where
   --This function takes an integer n and returns the n first elements of the "allv" list
   smallest :: [a]
   smallest = take uutNumCases (concat $ repeat allv)
-
-
-
   size ::  a -> Int
   default size :: (Generic a, GSized (Rep a)) => a -> Int
   size a = gsize (from a)

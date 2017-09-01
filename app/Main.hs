@@ -12,6 +12,7 @@ import UUTReader
 import UUT
 import UUTReaderUtilities
 import System.IO.Unsafe
+import qualified Data.Map as Map
 
 -----------------------------------------------------------------------------------
 -- | Programming generic size and generic enumeration of values
@@ -20,9 +21,16 @@ import System.IO.Unsafe
 
 --Dumb main function
 main :: IO ()
-main = putStrLn $(get_f_inp_types (head uutMethods) >>=
-	               (\x -> stringE $ show x
-	               	  ))
+main = print (sized 10 5 :: [Map.Map Int Int])
+
+{-main = putStrLn $(get_f_inp_types (head uutMethods) >>=
+	               (\x -> stringE $ pprint x))
+-}
+
+{-main = putStrLn $(gen_allv_str_listQ (notDefTypesQMonad (get_f_inp_types (head uutMethods))) >>=
+	               (\x -> stringE $ pprint x
+	               	  ))-}
+       
 
 {-main = putStrLn $(lookupValueName "uutPrec" >>=
                     (\(Just name) -> extract_info (reify name) >>=

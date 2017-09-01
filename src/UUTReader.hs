@@ -13,6 +13,8 @@ import TemplateArbitrary
 import UUT
 import UUTReaderUtilities
 
+instance Sized T
+
 test_UUT :: [Bool]
 test_UUT = test
 
