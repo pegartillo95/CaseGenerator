@@ -52,17 +52,17 @@ instance Allv a => Allv [a] where
 instance (Allv a, Allv b) => Allv (a,b) where
    allv = compose allv allv
 
-instance (Allv a, Allv b, Allv c) => Allv (a,(b,c)) where
-   allv = compose allv (compose allv allv)
+instance (Allv a, Allv b, Allv c) => Allv (a,b,c) where
+   allv = map (\(x,(y,z)) -> (x,y,z)) (compose allv (compose allv allv))
 
-instance (Allv a, Allv b, Allv c, Allv d) => Allv (a,(b,(c,d))) where
-   allv = compose allv (compose allv (compose allv allv))
+instance (Allv a, Allv b, Allv c, Allv d) => Allv (a,b,c,d) where
+   allv = map (\(x,(y,(z,t))) -> (x,y,z,t)) (compose allv (compose allv (compose allv allv)))
 
-instance (Allv a, Allv b, Allv c, Allv d, Allv e) => Allv (a,(b,(c,(d,e)))) where
-   allv = compose allv (compose allv (compose allv (compose allv allv)))
+instance (Allv a, Allv b, Allv c, Allv d, Allv e) => Allv (a,b,c,d,e) where
+   allv = map (\(x,(y,(z,(t,u)))) -> (x,y,z,t,u)) (compose allv (compose allv (compose allv (compose allv allv))))
 
-instance (Allv a, Allv b, Allv c, Allv d, Allv e, Allv f) => Allv (a,(b,(c,(d,(e,f))))) where
-   allv = compose allv (compose allv (compose allv (compose allv (compose allv allv))))
+instance (Allv a, Allv b, Allv c, Allv d, Allv e, Allv f) => Allv (a,b,c,d,e,f) where
+   allv = map (\(x,(y,(z,(t,(u,v))))) -> (x,y,z,t,u,v)) (compose allv (compose allv (compose allv (compose allv (compose allv allv)))))
 
 
 

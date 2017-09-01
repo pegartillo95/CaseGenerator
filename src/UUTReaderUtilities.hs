@@ -50,11 +50,11 @@ pos_f inputs outputs = zipWith pos_f_aux inputs outputs
 --pos_f (l:ls) (o:os) = (pos_f_aux l o):(pos_f ls os)
 
 --------------generators for auxiliar prueba functions-------------------------
-prec_f_aux $(linkedTupleP uutNargs) = $(appsE ((varE 'uutPrec):(map varE (listVar uutNargs))))
+prec_f_aux $(tupleP uutNargs) = $(appsE ((varE 'uutPrec):(map varE (listVar uutNargs))))
 
-fun_f_aux $(linkedTupleP uutNargs) = $(appsE ((varE 'uutMethod):(map varE (listVar uutNargs))))
+fun_f_aux $(tupleP uutNargs) = $(appsE ((varE 'uutMethod):(map varE (listVar uutNargs))))
 
-pos_f_aux $(linkedTupleP uutNargs) $(varP $ mkName "o") = $(appsE ((varE 'uutPost):((map varE (listVar uutNargs))++[varE $ mkName "o"]))) 
+pos_f_aux $(tupleP uutNargs) $(varP $ mkName "o") = $(appsE ((varE 'uutPost):((map varE (listVar uutNargs))++[varE $ mkName "o"]))) 
 
 ----------------------test function-------------------------------------
 test = prueba listArgs
