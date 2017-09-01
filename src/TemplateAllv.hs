@@ -35,7 +35,7 @@ gen_allv_str_list (x:xs) = do
 
 gen_allv_str :: String -> Q Dec
 gen_allv_str str = do
-                     (Just name) <- lookupTypeName str
+                     (Just name) <- lookupValueName str
                      gen_allv name
 
 {-gen_allv_str :: String -> Q Dec
