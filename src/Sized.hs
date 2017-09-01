@@ -1,4 +1,5 @@
 {-# LANGUAGE DefaultSignatures, DeriveGeneric, TypeOperators, FlexibleContexts, FlexibleInstances #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 module Sized
     ( Allv(..)
@@ -10,6 +11,9 @@ import GHC.Generics
 import qualified Data.Set as S
 import qualified Data.PQueue.Min as Q
 import System.IO.Unsafe (unsafePerformIO)
+import qualified Data.Map as Map
+import Arrays
+import Unsafe.TrueName
 
 ------------------------Num test cases------------------------
 uutNumCases :: Int
@@ -61,6 +65,13 @@ instance (Allv a, Allv b, Allv c, Allv d, Allv e, Allv f) => Allv (a,(b,(c,(d,(e
    allv = compose allv (compose allv (compose allv (compose allv (compose allv allv))))
 
 
+
+instance Allv a => Allv (Array a) where
+   allv = map buildArray allv where
+          buildArray xs = Arr (Map.fromList $ zip [0..] xs, length xs)
+
+instance Sized a => Sized (Array a) where
+   size (Arr (_,len)) = len
 
 
 -- | This is the exported, visible class that inherits from Allv.

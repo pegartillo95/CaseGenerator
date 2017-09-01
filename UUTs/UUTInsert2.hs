@@ -5,15 +5,21 @@
 module UUT where
 
 
-import qualified DataStructures.Arrays as A
-import qualified DataStructures.Bags as B
-import qualified DataStructures.Sets as S
-import qualified DataStructures.Sequences as Q
-import DataStructures.Assertion
+import qualified Arrays as A
+import qualified Bags as B
+import qualified Sets as S
+import qualified Sequences as Q
+import Assertion
+import Data.List
 
+uutNargs :: Int
+uutNargs = 3
 
+uutMethods :: [String]
+uutMethods = ["uutPrec", "uutMethod", "uutPost"]
 
-
+uutName :: String
+uutName = "insert" --TODO usar al principio del output
 
 uutPrec x m a = evalA $
   And
@@ -113,4 +119,3 @@ uutPost x m a res = evalA $
                                    (Aplic
                                       (Aplic
                                          ((TVar A.get)) ((TVar res))) ((TVar j)))))))))
-
