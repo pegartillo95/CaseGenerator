@@ -35,7 +35,7 @@ plain (x:xs)
   | otherwise = x:(plain xs)
 
 --------------------Prueba function------------------------------------
-prueba listArgs = pos_f filtered_pre output
+prueba listArgs = ((pos_f filtered_pre output), (listArgs), (filtered_pre))
               where 
                      filtered_pre = pre_f listArgs
                      output = fun_f filtered_pre
@@ -45,9 +45,6 @@ pre_f listArgs = filter (prec_f_aux) listArgs
 fun_f filtered_list = map fun_f_aux filtered_list
 
 pos_f inputs outputs = zipWith pos_f_aux inputs outputs
-
---pos_f [] [] = []
---pos_f (l:ls) (o:os) = (pos_f_aux l o):(pos_f ls os)
 
 --------------generators for auxiliar prueba functions-------------------------
 prec_f_aux $(tupleP uutNargs) = $(appsE ((varE 'uutPrec):(map varE (listVar uutNargs))))

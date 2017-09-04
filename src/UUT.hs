@@ -19,7 +19,7 @@ uutMethods :: [String]
 uutMethods = ["uutPrec", "uutMethod", "uutPost"]
 
 uutName :: String
-uutName = "insert" --TODO usar al principio del output
+uutName = "insert"
 
 uutPrec :: Int -> [Int] -> Bool
 uutPrec x xs = sorted xs
