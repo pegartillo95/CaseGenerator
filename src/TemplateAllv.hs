@@ -32,43 +32,41 @@ gen_allv_str_list (x:xs) = do
                               rec <- gen_allv_str_list xs
                               return (dec:rec)
 
-gen_allv_str :: String -> Q Dec
-gen_allv_str str = do
-                     (Just name) <- lookupTypeName str
-                     gen_allv name
-
 {-gen_allv_str :: String -> Q Dec
 gen_allv_str str = do
+                     (Just name) <- lookupTypeName str
+                     gen_allv name-}
+
+gen_allv_str :: String -> Q Dec
+gen_allv_str str = do
                      listStr <- return(split_str str "")
-                     listNames <- strs_to_names list_str
-                     (t:ts) <- return (transformToType listNames)
-                     genType <- return (foldl appT t ts) 
-                     gen_allv genType
+                     listNames <- strs_to_names listStr 
+                     gen_allv listNames
                         where
+                          split_str :: String -> String -> [String]
                           split_str [] saved = saved
                           split_str (x:xs) saved
                             | x == ' ' = saved:(split_str xs "")
-                            |otherwise = split_str xs (saved++x)
+                            |otherwise = split_str xs (saved++[x])
                           strs_to_names [] = return []   
                           strs_to_names (x:xs) = do 
                                                    (Just n) <- lookupValueName x
                                                    rec <- strs_to_names xs
-                                                   (n:rec)
-                          transformToType (x:xs) = (conT x):(map varT xs)-}
+                                                   return (n:rec)
 
 
 -- Generate an intance of the class Allv for the type typName
-gen_allv :: Name -> Q Dec
-gen_allv typName =
-  do (TyConI d) <- reify typName
+gen_allv :: [Name] -> Q Dec
+gen_allv (t:ts) =
+  do (TyConI d) <- reify t
       --Extract all the type info of the data type 
      (t_name,noSimplifiedName,cInfo,consts,typesCons) <- typeInfo (return d)
      --We call to gen_instance with a name for the class, the name of the constructor,
      --a list of info of the constructors, the constructors itself, lists containing
      --the constructors, name of the data-type without being simplified, and lastly
      --the function to generate the body of the function of the class.            
-     i_dec <- gen_instance (mkName "Allv") (conT t_name) cInfo consts
-                            typesCons noSimplifiedName (mkName "allv", gen_body)
+     i_dec <- gen_instance (mkName "Allv") t_name cInfo consts
+                            typesCons noSimplifiedName (mkName "allv", gen_body) ts
      return i_dec -- return the instance declaration
             -- gen_body is the function that we pass as an argument to gen_instance
             --and later on is used to generate the body of the allv function 
@@ -103,16 +101,17 @@ gen_allv typName =
 
 --Construct an instance of class class_name for type for_type
 --with a corresponding function  to build the method body
-gen_instance :: Name -> TypeQ -> [Int] -> [Name]
-                  -> [[Type]] -> Name -> Func -> DecQ
-gen_instance class_name for_type cInfo consts typesCons typeName_nosimp func =
-  instanceD (cxt [])
-    (appT (conT class_name) for_type) 
+gen_instance :: Name -> Name -> [Int] -> [Name]
+                  -> [[Type]] -> Name -> Func -> [Name] -> DecQ
+gen_instance class_name for_name cInfo consts typesCons typeName_nosimp func ctxTypes =
+  instanceD (cxt (map applyConst ctxTypes))
+    (appT (conT class_name) (foldl appT (conT for_name) (map varT ctxTypes))) 
     [(func_def func)] 
       where func_def (func_name, gen_func)-- extracts func_name and gen_func
                 = funD func_name -- method name
                   -- generate function body
                   [gen_clause gen_func cInfo consts typesCons typeName_nosimp]
+            applyConst var_name = appT (conT class_name) (varT var_name)
 
 
 -- Generate the pattern match and function body for a given method and
