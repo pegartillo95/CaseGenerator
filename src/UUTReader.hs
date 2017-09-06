@@ -12,6 +12,7 @@ import TemplateAllv
 import TemplateArbitrary
 import UUT
 import UUTReaderUtilities
+import UUTReaderUtilitiesDeep
 
 --test_UUT :: ([Bool], [a])
 test_UUT = test
