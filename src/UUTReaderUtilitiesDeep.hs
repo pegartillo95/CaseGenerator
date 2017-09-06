@@ -29,23 +29,55 @@ listOfPs 0 = []
 listOfPs n = (varP $ mkName ("x" ++ (show n))):(listOfPs (n-1))
 
 ----------------inputTypes for smallest ------------------------------------
-inputTypesExt :: Q [String] -> TypeQ
-inputTypesExt strsQ = do
-                         strList <- strsQ
-                         typeList <- return (inputTypes strList)
-                         arrowedList <- return (addArrows typeList)
-                         (ts,last) <- return (separateLastElem arrowedList [])
-                         genType <- return (foldr appT last ts)
-                         genType
+inputT :: String -> TypeQ
+inputT str = do
+                (Just name) <- lookupValueName str
+                listTypes <- getListTypes (reify name)
+                monomTypes <- return (monomorphing listTypes)
+                (ts, lastElem) <- return (separateLastElem monomTypes [])
+                tupleType <- return(TupleT (length ts))
+                genType <- return (foldl AppT tupleType ts)                         
+                return (AppT ListT genType)
 
-separateLastElem :: [TypeQ] -> [TypeQ] -> ([TypeQ], TypeQ)
+monomorphing :: [Type] -> [Type]
+monomorphing [] = []
+monomorphing ((VarT _):xs) = (ConT ''Int):(monomorphing xs)
+monomorphing (x:xs) = x:(monomorphing xs)
+
+
+separateLastElem :: [Type] -> [Type] -> ([Type], Type)
 separateLastElem (x:[]) accum = (accum, x)
 separateLastElem (x:xs) accum = separateLastElem xs (accum++[x])
 
+getListTypes :: InfoQ -> Q [Type]
+getListTypes info = 
+        do d <- info
+           return (typesList d)
+        where 
+           typesList (VarI _ x _ _) = firstParsing x
+           typesList (ClassOpI _ x _ _) = firstParsing x
 
-addArrows :: [TypeQ] -> [TypeQ]
-addArrows (x:[]) = [x]
-addArrows (x:xs) = (appT arrowT x):(addArrows xs)
+           firstParsing ((ForallT _ _ x)) = extracTypes x
+           firstParsing x = extracTypes x
+           
+           extracTypes ((AppT (AppT ArrowT x) y)) = [x]++(extracTypes y)
+           extracTypes x = [x]
+
+           {-extracTypes ((AppT (AppT (TupleT 2) x) y)) = (AppT (AppT (TupleT 2) (extracTypes x)) (extracTypes y))
+           extracTypes ((AppT (AppT (AppT (TupleT 3) x) y) z)) = (AppT (AppT (AppT (TupleT 3) (extracTypes x)) (extracTypes y)) (extracTypes z))
+           extracTypes ((AppT ArrowT x)) = extracTypes x
+           extracTypes ((AppT ListT x)) = (AppT ListT (extracTypes x))
+           extracTypes ((AppT x y)) = (extracTypes x):[(extracTypes y)]
+           extracTypes ((ConT x)) = (ConT x)
+           extracTypes ((VarT _)) = (ConT ''Int)-}
+
+{-inputTypesExt :: Q [String] -> TypeQ
+inputTypesExt strsQ = do
+                         strList <- strsQ
+                         typeList <- return (inputTypes strList)
+                         tupleType <- return(tupleT (length typeList))
+                         genType <- return (foldl appT tupleType typeList)                         
+                         (appT listT genType)
 
 inputTypes :: [String] -> [TypeQ]
 inputTypes [] = []
@@ -59,8 +91,9 @@ isSimple (x:xs) = (x /=  ' ') && (isSimple xs)
 
 simpleType :: String -> TypeQ
 simpleType str = do
-	               (Just name) <- lookupTypeName str
-	               return (ConT name)
+                 --(Just name) <- lookupTypeName str
+                 let name = ''Int
+                 return (ConT name)
 
 complexType :: String -> TypeQ
 complexType str = do
@@ -74,12 +107,12 @@ complexType str = do
                              split_str (x:xs) saved
                                | x == ' ' = saved:(split_str xs [])
                                |otherwise = split_str xs (saved++[x])
-                             strs_to_names [] = return []   
+                              strs_to_names [] = return []   
                              strs_to_names (x:xs) = do 
                                                       (Just n) <- lookupValueName x
                                                       rec <- strs_to_names xs
                                                       return (n:rec)
-                             transformToType (x:xs) = (ConT x):(map VarT xs)
+                             transformToType (x:xs) = (ConT x):(map VarT xs)-}
 
 ----------------Get types for the input params------------------------------
 get_f_inp_types :: String -> Q [String]

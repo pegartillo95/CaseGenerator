@@ -60,4 +60,4 @@ pos_f_aux $(tupleP uutNargs) $(varP $ mkName "o") = $(appsE ((varE 'uutPost):((m
 
 ----------------------test function-------------------------------------
 test = prueba listArgs
-        where listArgs = (smallest :: $(inputTypesExt (get_f_inp_types (head uutMethods))))
+        where listArgs = (smallest :: $(inputT (head uutMethods)))
