@@ -10,12 +10,6 @@ import Data.String.Utils
 import System.IO.Unsafe
 import UUT
 import UUTReaderUtilitiesDeep
-import qualified Arrays as A
-import qualified Bags as B
-import qualified Sets as S
-import qualified Sequences as Q
-import Assertion
-import Data.List
 
 ----------Recognize user defined types --------------------------------
 notDefTypesQMonad :: Q [String] -> Q [String]
@@ -25,7 +19,7 @@ notDefTypesQMonad xs = do list <- xs
 notDefTypes :: [String] -> [String]
 notDefTypes [] = []
 notDefTypes (x:xs)
-   | (isUserDef (plain x)) = (plain x):(notDefTypes xs)
+   | (isUserDef (plain x "")) = (plain x ""):(notDefTypes xs)
    | otherwise = notDefTypes xs
 
 isUserDef :: String -> Bool
@@ -33,11 +27,11 @@ isUserDef str
    | str == "Int" || str == "Char" || str == "Bool" = False
    | otherwise = True
 
-plain :: String -> String
-plain [] = []
-plain (x:xs)
-  | x == '[' || x == ']' = plain xs
-  | otherwise = x:(plain xs)
+plain :: String -> String -> String
+plain [] accum = accum
+plain (x:xs) accum
+  | (x == ' ') = plain xs ""
+  | otherwise = plain xs (accum++[x])
 
 --------------------Prueba function------------------------------------
 prueba listArgs = ((pos_f filtered_pre output), (listArgs), (filtered_pre))

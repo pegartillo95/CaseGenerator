@@ -46,6 +46,14 @@ instance Sized a => Sized [a]
 
 instance (Sized a, Sized b) => Sized (a,b)
 
+instance (Sized a, Sized b, Sized c) => Sized (a,b,c)
+
+instance (Sized a, Sized b, Sized c, Sized d) => Sized (a,b,c,d)
+
+instance (Sized a, Sized b, Sized c, Sized d, Sized e) => Sized (a,b,c,d,e)
+
+instance (Sized a, Sized b, Sized c, Sized d, Sized e, Sized f) => Sized (a,b,c,d,e,f)
+
 instance Allv a => Allv [a] where
    allv = [] : (map (\(x,xs) -> x:xs) $ compose allv allv)
 

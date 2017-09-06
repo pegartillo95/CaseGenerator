@@ -14,7 +14,6 @@ import UUT
 import UUTReaderUtilities
 import UUTReaderUtilitiesDeep
 
---test_UUT :: ([Bool], [a])
 test_UUT = test
 
 -------------call to gen_all and gen_arbitrary -------------------------------------
@@ -26,15 +25,15 @@ printInfoTuple (xs,ys,zs) = printInfo xs ys zs
 
 printInfo xs ys zs = "Testing the function " ++ uutName ++ " generating a total of " ++ (show (length ys)) ++
                      " test cases of which " ++ (show (length zs)) ++ " passed the precondition "
-                    ++ "Test cases: " ++ (printTestCases ys)
-                    ++ "Test cases that passed the precondition: " ++ (printTestCases zs) ++
+                    ++ "\n\nTest cases:" ++ (printTestCases ys)
+                    ++ "\n\nTest cases that passed the precondition:" ++ (printTestCases zs) ++
                     if ((length $ filter (== True) xs) == (length xs)) then " None of them failed"
-                  	  else "And these are the ones that failed. \n" ++ (printInfoAux xs ys)
+                      else "And these are the ones that failed. \n" ++ (printInfoAux xs ys)
 
 printInfoAux [] [] = ""
 printInfoAux (x:xs) (y:ys)
-	| (x == True) = (printInfoAux xs ys)
-	| otherwise = (show y) ++ (printInfoAux xs ys)
+    | (x == True) = (printInfoAux xs ys)
+    | otherwise = (show y) ++ (printInfoAux xs ys)
 
 printTestCases [] = ""
 printTestCases (y:ys) = (show y) ++ ", " ++ (printTestCases ys)

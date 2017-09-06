@@ -13,109 +13,26 @@ import Assertion
 import Data.List
 
 uutNargs :: Int
-uutNargs = 3
+uutNargs = 2
 
 uutMethods :: [String]
 uutMethods = ["uutPrec", "uutMethod", "uutPost"]
 
 uutName :: String
-uutName = "insert" --TODO usar al principio del output
+uutName = "insert"
 
-uutPrec x m a = evalA $
-  And
-    (FTerm (Aplic
-              (Aplic
-                 (TVar (<=))
-                 ((TConst 0)))
-              ((TVar m))))
-    (And
-       (FTerm (Aplic
-                 (Aplic
-                    (TVar (<))
-                    ((TVar m)))
-                 (Aplic
-                    ((TVar A.len)) ((TVar a)))))
-       (Forall
-          (GuardIntTuple
-             (Tuple2 ((TConst 0)) ((TConst 0)))
-             (Tuple2 (Aplic (Aplic (TVar (-)) (TVar m)) (TConst 1)) (Aplic (Aplic (TVar (-)) (TVar m)) (TConst 1))))
-          (\(i, j) -> (Imp
-                         (FTerm (Aplic
-                                   (Aplic
-                                      (TVar (<=))
-                                      ((TConst 0)))
-                                   ((TVar i))))
-                         (Imp
-                            (FTerm (Aplic
-                                      (Aplic
-                                         (TVar (<=))
-                                         ((TVar i)))
-                                      ((TVar j))))
-                            (Imp
-                               (FTerm (Aplic
-                                         (Aplic
-                                            (TVar (<))
-                                            ((TVar j)))
-                                         ((TVar m))))
-                               (FTerm (Aplic
-                                         (Aplic
-                                            (TVar (<=))
-                                            (Aplic
-                                               (Aplic
-                                                  ((TVar A.get)) ((TVar a))) ((TVar i))))
-                                         (Aplic
-                                            (Aplic
-                                               ((TVar A.get)) ((TVar a))) ((TVar j)))))))))))
-uutMethod x m a =
-  let i = (-) m 1 in
-    f2 x m i a
-    where
-      f2 x m i a =
-        let b1 = (>=) i 0 in
-          case b1 of
-            False -> f4 x m i a
-            True -> let e = A.get a i in
-              let b2 = (<) x e in
-                case b2 of
-                  True -> let e = A.get a i in
-                    let i2 = (+) i 1 in
-                      let ap = A.set a i2 e in
-                        let i3 = (-) i 1 in
-                          f2 x m i3 ap
-                  False -> f4 x m i a
-      f4 x m i a =
-        let i2 = (+) i 1 in
-          let ap = A.set a i2 x in
-            ap
-uutPost x m a res = evalA $
-  Forall
-    (GuardIntTuple
-       (Tuple2 ((TConst 0)) ((TConst 0)))
-       (Tuple2 ((TVar m)) ((TVar m))))
-    (\(i, j) -> (Imp
-                   (FTerm (Aplic
-                             (Aplic
-                                (TVar (<=))
-                                ((TConst 0)))
-                             ((TVar i))))
-                   (Imp
-                      (FTerm (Aplic
-                                (Aplic
-                                   (TVar (<=))
-                                   ((TVar i)))
-                                ((TVar j))))
-                      (Imp
-                         (FTerm (Aplic
-                                   (Aplic
-                                      (TVar (<=))
-                                      ((TVar j)))
-                                   ((TVar m))))
-                         (FTerm (Aplic
-                                   (Aplic
-                                      (TVar (<=))
-                                      (Aplic
-                                         (Aplic
-                                            ((TVar A.get)) ((TVar res))) ((TVar i))))
-                                   (Aplic
-                                      (Aplic
-                                         ((TVar A.get)) ((TVar res))) ((TVar j)))))))))
+uutPrec :: Int -> [Int] -> Bool
+uutPrec x xs = sorted xs
+
+sorted []       = True
+sorted [x]      = True
+sorted (x:y:xs) = x <= y && sorted (y:xs)
+
+
+uutMethod :: Int -> [Int] -> [Int]
+uutMethod x [] = [x]
+uutMethod x (y:ys) | x <= y    = x:y:ys
+                   | otherwise = y : uutMethod x ys
+
+uutPost :: Int -> [Int] -> [Int] -> Bool
+uutPost x xs ys = ys == sort (x:xs)

@@ -11,6 +11,7 @@ import TemplateArbitrary
 import UUTReader
 import UUT
 import UUTReaderUtilities
+import UUTReaderUtilitiesDeep
 import System.IO.Unsafe
 
 -----------------------------------------------------------------------------------
@@ -20,7 +21,7 @@ import System.IO.Unsafe
 
 --Dumb main function
 main :: IO ()
-main = putStrLn $(stringE (printInfoTuple test_UUT))
+main = putStrLn (printInfoTuple test_UUT)
 
 {-main = putStrLn $(get_f_inp_types (head uutMethods) >>=
                    (\x -> stringE $ show x

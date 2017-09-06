@@ -7,12 +7,6 @@ import Language.Haskell.TH
 import UUT
 import Sized
 import Data.String.Utils
-import qualified Arrays as A
-import qualified Bags as B
-import qualified Sets as S
-import qualified Sequences as Q
-import Assertion
-import Data.List
 
 --------------Create a list of variables -----------------------------
 listVar :: Int -> [Name]
@@ -33,17 +27,16 @@ inputT :: String -> TypeQ
 inputT str = do
                 (Just name) <- lookupValueName str
                 listTypes <- getListTypes (reify name)
-                monomTypes <- return (monomorphing listTypes)
+                monomTypes <- return (map monomorph listTypes)
                 (ts, lastElem) <- return (separateLastElem monomTypes [])
                 tupleType <- return(TupleT (length ts))
                 genType <- return (foldl AppT tupleType ts)                         
                 return (AppT ListT genType)
 
-monomorphing :: [Type] -> [Type]
-monomorphing [] = []
-monomorphing ((VarT _):xs) = (ConT ''Int):(monomorphing xs)
-monomorphing (x:xs) = x:(monomorphing xs)
-
+monomorph :: Type -> Type
+monomorph (AppT x y) = (AppT (monomorph x) (monomorph y))
+monomorph (VarT _) = (ConT ''Int)
+monomorph x = x
 
 separateLastElem :: [Type] -> [Type] -> ([Type], Type)
 separateLastElem (x:[]) accum = (accum, x)
@@ -62,57 +55,6 @@ getListTypes info =
            
            extracTypes ((AppT (AppT ArrowT x) y)) = [x]++(extracTypes y)
            extracTypes x = [x]
-
-           {-extracTypes ((AppT (AppT (TupleT 2) x) y)) = (AppT (AppT (TupleT 2) (extracTypes x)) (extracTypes y))
-           extracTypes ((AppT (AppT (AppT (TupleT 3) x) y) z)) = (AppT (AppT (AppT (TupleT 3) (extracTypes x)) (extracTypes y)) (extracTypes z))
-           extracTypes ((AppT ArrowT x)) = extracTypes x
-           extracTypes ((AppT ListT x)) = (AppT ListT (extracTypes x))
-           extracTypes ((AppT x y)) = (extracTypes x):[(extracTypes y)]
-           extracTypes ((ConT x)) = (ConT x)
-           extracTypes ((VarT _)) = (ConT ''Int)-}
-
-{-inputTypesExt :: Q [String] -> TypeQ
-inputTypesExt strsQ = do
-                         strList <- strsQ
-                         typeList <- return (inputTypes strList)
-                         tupleType <- return(tupleT (length typeList))
-                         genType <- return (foldl appT tupleType typeList)                         
-                         (appT listT genType)
-
-inputTypes :: [String] -> [TypeQ]
-inputTypes [] = []
-inputTypes (x:xs) 
-   | (isSimple x) = (simpleType x):(inputTypes xs)
-   | otherwise = (complexType x): (inputTypes xs)
-
-isSimple :: String -> Bool
-isSimple [] = True
-isSimple (x:xs) = (x /=  ' ') && (isSimple xs) 
-
-simpleType :: String -> TypeQ
-simpleType str = do
-                 --(Just name) <- lookupTypeName str
-                 let name = ''Int
-                 return (ConT name)
-
-complexType :: String -> TypeQ
-complexType str = do
-                     listStr <- return(split_str str [])
-                     listNames <- strs_to_names listStr
-                     (t:ts) <- return (transformToType listNames)
-                     genType <- return (foldl AppT t ts)
-                     return genType
-	                   where
-                             split_str [] saved = [saved]
-                             split_str (x:xs) saved
-                               | x == ' ' = saved:(split_str xs [])
-                               |otherwise = split_str xs (saved++[x])
-                              strs_to_names [] = return []   
-                             strs_to_names (x:xs) = do 
-                                                      (Just n) <- lookupValueName x
-                                                      rec <- strs_to_names xs
-                                                      return (n:rec)
-                             transformToType (x:xs) = (ConT x):(map VarT xs)-}
 
 ----------------Get types for the input params------------------------------
 get_f_inp_types :: String -> Q [String]
@@ -170,10 +112,10 @@ simplifyParsing string = fst (auxiliarParse string)
  
 auxiliarParse s
      | startswith "->" (lstrip s) = ( (fst call2) ++ " -> " ++ (fst (call 0 (snd call2))) , snd (call 0 (snd call2)))
-     | startswith "[]" (lstrip s) = ("[" ++ (fst call2) ++ "]", snd call2)
-     | startswith "(,)" (lstrip s) = ("(" ++ (fst call3) ++ "," ++ (fst (call 0 (snd call3))) ++ ")" , snd (call 0 (snd call3)))
-     | startswith "(,,)" (lstrip s) = ("(" ++ (fst call4) ++ "," ++ (fst (call 0 (snd call4))) ++ "," ++ (fst (call 0 (snd (call 0 (snd call4))))) ++ ")" , snd (call 0 (snd (call 0 (snd call4)))))
-     | startswith "(,,,)" (lstrip s) = ("(" ++ (fst call5) ++ "," ++ (fst (call 0 (snd call5))) ++ "," ++ (fst (call 0 (snd (call 0 (snd call5))))) ++ "," ++ (fst (call 0 (snd (call 0 (snd (call 0 (snd call5))))))) ++ ")" , snd (call 0 (snd (call 0 (snd (call 0 (snd call5)))))))
+     | startswith "[]" (lstrip s) = ("[]_" ++ (fst call2) , snd call2)
+     | startswith "(,)" (lstrip s) = ("(,)_" ++ (fst call3) ++ (fst (call 0 (snd call3))) , snd (call 0 (snd call3)))
+     | startswith "(,,)" (lstrip s) = ("(,,)_" ++ (fst call4) ++ (fst (call 0 (snd call4))) ++ (fst (call 0 (snd (call 0 (snd call4))))) , snd (call 0 (snd (call 0 (snd call4)))))
+     | startswith "(,,,)" (lstrip s) = ("(,,,)_" ++ (fst call5) ++ (fst (call 0 (snd call5))) ++ (fst (call 0 (snd (call 0 (snd call5))))) ++ (fst (call 0 (snd (call 0 (snd (call 0 (snd call5))))))) , snd (call 0 (snd (call 0 (snd (call 0 (snd call5)))))))
      | startswith "{" (lstrip s) = compoundVar (lstrip s) ""
      | otherwise = baseVar (lstrip s) ""
  
@@ -200,5 +142,5 @@ extract_types [] list _ = list
 extract_types (x1:xs) list building_t
       | (x1 == ' ') || (x1 == '>') = extract_types xs list building_t
       | (x1 == '-') = extract_types xs (list++[building_t]) ""
-      | (x1 == '_') = extract_types xs list (building_t ++ " ")
+      | (x1 == '_') = extract_types xs list (building_t ++[' '])
       | otherwise = extract_types xs list (building_t++[x1])
