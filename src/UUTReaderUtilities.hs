@@ -11,6 +11,9 @@ import System.IO.Unsafe
 import UUT
 import UUTReaderUtilitiesDeep
 
+
+instance Sized a => Sized (Tree a)
+
 ----------Recognize user defined types --------------------------------
 notDefTypesQMonad :: Q [String] -> Q [String]
 notDefTypesQMonad xs = do list <- xs
@@ -81,7 +84,3 @@ prec_f_aux $(tupleP uutNargs) = $(appsE ((varE 'uutPrec):(map varE (listVar uutN
 fun_f_aux $(tupleP uutNargs) = $(appsE ((varE 'uutMethod):(map varE (listVar uutNargs))))
 
 pos_f_aux $(tupleP uutNargs) $(varP $ mkName "o") = $(appsE ((varE 'uutPost):((map varE (listVar uutNargs))++[varE $ mkName "o"]))) 
-
-----------------------test function-------------------------------------
-test = prueba listArgs
-        where listArgs = (smallest :: $(inputT (head uutMethods)))

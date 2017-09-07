@@ -37,3 +37,7 @@ printInfoAux (x:xs) (y:ys)
 
 printTestCases [] = ""
 printTestCases (y:ys) = (show y) ++ ", " ++ (printTestCases ys)
+
+----------------------test function-------------------------------------
+test = prueba listArgs
+        where listArgs = (smallest :: $(inputT (head uutMethods)))
