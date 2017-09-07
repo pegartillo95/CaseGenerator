@@ -83,5 +83,5 @@ fun_f_aux $(tupleP uutNargs) = $(appsE ((varE 'uutMethod):(map varE (listVar uut
 pos_f_aux $(tupleP uutNargs) $(varP $ mkName "o") = $(appsE ((varE 'uutPost):((map varE (listVar uutNargs))++[varE $ mkName "o"]))) 
 
 ----------------------test function-------------------------------------
---test = prueba listArgs
---        where listArgs = (smallest :: $(inputT (head uutMethods)))
+test = prueba listArgs
+        where listArgs = (smallest :: $(inputT (head uutMethods)))
