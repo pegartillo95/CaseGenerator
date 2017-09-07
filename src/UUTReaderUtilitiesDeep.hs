@@ -85,7 +85,8 @@ extract_info m =
          first_parse ((ForallT _ _ x)) = parsing x
          first_parse x = parsing x
   
-         parsing ((AppT (ConT x) (VarT y))) = "{" ++ (parsing (ConT x)) ++ "_" ++ (parsing (VarT y)) ++ "}"  
+         parsing ((AppT (ConT x) (VarT y))) = "{" ++ (parsing (ConT x)) ++ "_" ++ (parsing (VarT y)) ++ "}"
+         parsing ((AppT (ConT x) (ConT y))) = "{" ++ (parsing (ConT x)) ++ "_" ++ (parsing (ConT y)) ++ "}"  
          parsing ((AppT x y)) = (parsing x) ++ (parsing y)
          parsing (ArrowT) = "-> "
          parsing (ListT) = "[] "

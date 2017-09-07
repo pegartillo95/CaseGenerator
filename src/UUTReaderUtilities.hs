@@ -17,21 +17,51 @@ notDefTypesQMonad xs = do list <- xs
                           return (notDefTypes list)
 
 notDefTypes :: [String] -> [String]
-notDefTypes [] = []
-notDefTypes (x:xs)
-   | (isUserDef (plain x "")) = (plain x ""):(notDefTypes xs)
-   | otherwise = notDefTypes xs
+notDefTypes xs = removeDuplicates notDefinedTypes
+                  where notDefinedTypes = concat (map defTypes separated)
+                        separated = map (\x -> split_str x "") xs
+                        
+                        split_str :: String -> String -> [String]
+                        split_str [] saved = [saved]
+                        split_str (x:xs) saved
+                          | x == ' ' = saved:(split_str xs "")
+                          |otherwise = split_str xs (saved++[x])
 
-isUserDef :: String -> Bool
-isUserDef str
-   | str == "Int" || str == "Char" || str == "Bool" = False
-   | otherwise = True
+                        defTypes :: [String] -> [String]
+                        defTypes [] = []
+                        defTypes (x:[])
+                          | (definedBaseTypes x) = []
+                          | otherwise = [x]
+                        defTypes (x:xs) = (keepUndefinedComplex x (length xs))++(keepUndefinedSimples xs)
 
-plain :: String -> String -> String
-plain [] accum = accum
-plain (x:xs) accum
-  | (x == ' ') = plain xs ""
-  | otherwise = plain xs (accum++[x])
+                        keepUndefinedComplex :: String -> Int -> [String]
+                        keepUndefinedComplex x n
+                          | (definedComplexTypes x) = []
+                          | otherwise = [x ++ " " ++(listOfVariables n)]
+
+                        listOfVariables :: Int -> String
+                        listOfVariables 0 = ""
+                        listOfVariables 1 = "x1"
+                        listOfVariables n = ("x"++(show n)) ++ " " ++ (listOfVariables (n-1))
+                        
+                        keepUndefinedSimples :: [String] -> [String]
+                        keepUndefinedSimples [] = []
+                        keepUndefinedSimples (x:xs)
+                          | (definedBaseTypes x) = keepUndefinedSimples xs
+                          | otherwise = x:(keepUndefinedSimples xs)
+
+definedBaseTypes :: String -> Bool  
+definedBaseTypes x = (x == "Int" || x == "Char" || x == "Bool")
+
+definedComplexTypes :: String -> Bool  
+definedComplexTypes x = (x == "[]" || x == "(,)" || x == "(,,)" || x == "(,,,)" || x == "Array")
+
+removeDuplicates :: Eq a => [a] -> [a]
+removeDuplicates = rdHelper []
+    where rdHelper seen [] = seen
+          rdHelper seen (x:xs)
+              | x `elem` seen = rdHelper seen xs
+              | otherwise = rdHelper (seen ++ [x]) xs
 
 --------------------Prueba function------------------------------------
 prueba listArgs = ((pos_f filtered_pre output), (listArgs), (filtered_pre))
@@ -53,5 +83,5 @@ fun_f_aux $(tupleP uutNargs) = $(appsE ((varE 'uutMethod):(map varE (listVar uut
 pos_f_aux $(tupleP uutNargs) $(varP $ mkName "o") = $(appsE ((varE 'uutPost):((map varE (listVar uutNargs))++[varE $ mkName "o"]))) 
 
 ----------------------test function-------------------------------------
-test = prueba listArgs
-        where listArgs = (smallest :: $(inputT (head uutMethods)))
+--test = prueba listArgs
+--        where listArgs = (smallest :: $(inputT (head uutMethods)))

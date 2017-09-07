@@ -32,11 +32,6 @@ gen_allv_str_list (x:xs) = do
                               rec <- gen_allv_str_list xs
                               return (dec:rec)
 
-{-gen_allv_str :: String -> Q Dec
-gen_allv_str str = do
-                     (Just name) <- lookupTypeName str
-                     gen_allv name-}
-
 gen_allv_str :: String -> Q Dec
 gen_allv_str str = do
                      listStr <- return(split_str str "")
@@ -44,7 +39,7 @@ gen_allv_str str = do
                      gen_allv listNames
                         where
                           split_str :: String -> String -> [String]
-                          split_str [] saved = saved
+                          split_str [] saved = [saved]
                           split_str (x:xs) saved
                             | x == ' ' = saved:(split_str xs "")
                             |otherwise = split_str xs (saved++[x])

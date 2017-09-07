@@ -21,11 +21,11 @@ import System.IO.Unsafe
 
 --Dumb main function
 main :: IO ()
-main = putStrLn (printInfoTuple test_UUT)
+{-main = putStrLn (printInfoTuple test_UUT)-}
 
-{-main = putStrLn $(get_f_inp_types (head uutMethods) >>=
+main = putStrLn $(notDefTypesQMonad (get_f_inp_types (head uutMethods)) >>=
                    (\x -> stringE $ show x
-                      ))-}
+                      ))
 
 {-main = putStrLn $(lookupValueName "uutPrec" >>=
                     (\(Just name) -> extract_info (reify name) >>=

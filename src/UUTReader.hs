@@ -14,10 +14,10 @@ import UUT
 import UUTReaderUtilities
 import UUTReaderUtilitiesDeep
 
-test_UUT = test
+--test_UUT = test
 
 -------------call to gen_all and gen_arbitrary -------------------------------------
-$(gen_allv_str_listQ (notDefTypesQMonad (get_f_inp_types (head uutMethods))))
+-- $(gen_allv_str_listQ (notDefTypesQMonad (get_f_inp_types (head uutMethods))))
 
 --------------Printing the ending information---------------------------------------
 
