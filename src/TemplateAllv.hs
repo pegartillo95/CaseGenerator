@@ -1,12 +1,14 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module TemplateAllv (
-     gen_allv_str_listQ
+     gen_allv_str_listQ,
+     gen_allv_list
     )where
 
 import Language.Haskell.TH
 import Data.Char
 import Sized
+import UUT
 
 ------------------------------------------------------------------------------------
 -------------------- Usefull alias for some data types------------------------------
@@ -34,25 +36,27 @@ gen_allv_str_list (x:xs) = do
 
 gen_allv_str :: String -> Q Dec
 gen_allv_str str = do
-                     listStr <- return(split_str str "")
-                     listNames <- strs_to_names listStr 
-                     gen_allv listNames
+                     (typeStr, numArg) <- return (headArgs(split_str str ""))
+                     (Just typeName) <- lookupTypeName typeStr 
+                     gen_allv typeName numArg
                         where
+                          headArgs :: [String] -> (String,Int)
+                          headArgs (x:xs) = (x, (length xs))
                           split_str :: String -> String -> [String]
                           split_str [] saved = [saved]
                           split_str (x:xs) saved
                             | x == ' ' = saved:(split_str xs "")
                             |otherwise = split_str xs (saved++[x])
-                          strs_to_names [] = return []   
-                          strs_to_names (x:xs) = do 
-                                                   (Just n) <- lookupValueName x
-                                                   rec <- strs_to_names xs
-                                                   return (n:rec)
 
+
+gen_allv_list :: Name -> Int -> Q [Dec]
+gen_allv_list name n = do 
+                         dec <- gen_allv name n
+                         return [dec]
 
 -- Generate an intance of the class Allv for the type typName
-gen_allv :: [Name] -> Q Dec
-gen_allv (t:ts) =
+gen_allv :: Name -> Int -> Q Dec
+gen_allv t n =
   do (TyConI d) <- reify t
       --Extract all the type info of the data type 
      (t_name,noSimplifiedName,cInfo,consts,typesCons) <- typeInfo (return d)
@@ -61,7 +65,7 @@ gen_allv (t:ts) =
      --the constructors, name of the data-type without being simplified, and lastly
      --the function to generate the body of the function of the class.            
      i_dec <- gen_instance (mkName "Allv") t_name cInfo consts
-                            typesCons noSimplifiedName (mkName "allv", gen_body) ts
+                            typesCons noSimplifiedName (mkName "allv", gen_body) n
      return i_dec -- return the instance declaration
             -- gen_body is the function that we pass as an argument to gen_instance
             --and later on is used to generate the body of the allv function 
@@ -69,7 +73,7 @@ gen_allv (t:ts) =
        where gen_body :: [Int] -> [Name] -> [Name]-> [ExpQ]
              gen_body _ [] [] = []
              gen_body (i:is) (c:cs) (f:fs) --cInfo consts listOfF 
-                | null cs = [appsE (mapE:constructorF:(allvFunc i))] ++
+                | null cs = [appsE listExps] ++
                               (gen_body is cs fs)
                 | otherwise = [appsE (varE '(++):[appsE (mapE:constructorF:
                             (allvFunc i))] ++ gen_body is cs fs)]
@@ -79,6 +83,9 @@ gen_allv (t:ts) =
                             --if the data constructor has more than one parameter
                             --we need to apply compose to them and then apply a
                             --function over the result of compose.
+                            listExps = if(i > 0) then (mapE:constructorF:(allvFunc i))
+                                  else (constructorF:(allvFunc i))
+
                             constructorF 
                                 | i > 1 = varE f
                                 | otherwise = conE c
@@ -90,6 +97,7 @@ gen_allv (t:ts) =
                             allvE = appsE [varE 'allv]
                             moveHead (x1:x2:xs) = x2:x1:xs
 
+                            allvFunc 0 = []
                             allvFunc 1 = [allvE]
                             allvFunc n = [appsE (composeE:[allvE] ++ allvFunc (n-1))]
 
@@ -97,8 +105,9 @@ gen_allv (t:ts) =
 --Construct an instance of class class_name for type for_type
 --with a corresponding function  to build the method body
 gen_instance :: Name -> Name -> [Int] -> [Name]
-                  -> [[Type]] -> Name -> Func -> [Name] -> DecQ
-gen_instance class_name for_name cInfo consts typesCons typeName_nosimp func ctxTypes =
+
+                  -> [[Type]] -> Name -> Func -> Int -> DecQ
+gen_instance class_name for_name cInfo consts typesCons typeName_nosimp func n =
   instanceD (cxt (map applyConst ctxTypes))
     (appT (conT class_name) (foldl appT (conT for_name) (map varT ctxTypes))) 
     [(func_def func)] 
@@ -107,6 +116,9 @@ gen_instance class_name for_name cInfo consts typesCons typeName_nosimp func ctx
                   -- generate function body
                   [gen_clause gen_func cInfo consts typesCons typeName_nosimp]
             applyConst var_name = appT (conT class_name) (varT var_name)
+
+            ctxTypes :: [Name]
+            ctxTypes = map (\x -> mkName ("x"++ (show x))) (take n [1..])
 
 
 -- Generate the pattern match and function body for a given method and

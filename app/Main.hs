@@ -20,9 +20,20 @@ import System.IO.Unsafe
 -- | autor: Ricardo Peña & Pedro García Castillo, febrero 2017
 -----------------------------------------------------------------------------------
 
---Dumb main function
 main :: IO ()
-main = putStrLn (printInfoTuple test_UUT)
+main = putStrLn ("Hola mundo")
+
+--main = putStrLn (printInfoTuple test_UUT)
+
+{-main = do 
+          putStrLn (bonito)
+
+bonito :: String
+bonito = $(do 
+              (u:us) <- (gen_allv_str_listQ (notDefTypesQMonad (get_f_inp_types (head uutMethods))))
+              let s = pprint u
+              let s' = stringE s
+              s')-}
 
 {-main = putStrLn $(notDefTypesQMonad (get_f_inp_types (head uutMethods)) >>=
                    (\x -> stringE $ show x

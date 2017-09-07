@@ -18,13 +18,13 @@ import UUTReaderUtilitiesDeep
 --instance Sized a => Sized (Tree a)
 
 -------------call to gen_all and gen_arbitrary -------------------------------------
-$(gen_allv_str_listQ (notDefTypesQMonad (get_f_inp_types (head uutMethods))))
-
+-- $(gen_allv_str_listQ (notDefTypesQMonad (get_f_inp_types (head uutMethods))))
+$(gen_allv_list ''Tree 1) 
 -------------call to gen_sized and gen_arbitrary -------------------------------------
-$(gen_sized_str_listQ (notDefTypesQMonad (get_f_inp_types (head uutMethods))))
+-- $(gen_sized_str_listQ (notDefTypesQMonad (get_f_inp_types (head uutMethods))))
 
 ------------------main test function------------------------------------------------
-test_UUT = test
+--test_UUT = test
 
 --------------Printing the ending information---------------------------------------
 
@@ -46,5 +46,5 @@ printTestCases [] = ""
 printTestCases (y:ys) = (show y) ++ ", " ++ (printTestCases ys)
 
 ----------------------test function-------------------------------------
-test = prueba listArgs
-        where listArgs = (smallest :: $(inputT (head uutMethods)))
+--test = prueba listArgs
+--        where listArgs = (smallest :: $(inputT (head uutMethods)))
