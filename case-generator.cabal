@@ -19,6 +19,7 @@ library
                       , Arbitrary
                       , TemplateAllv
                       , TemplateArbitrary
+                      , TemplateSized
                       , UUTReader
                       , UUT
                       , UUTReaderUtilities

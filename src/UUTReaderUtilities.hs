@@ -12,8 +12,6 @@ import UUT
 import UUTReaderUtilitiesDeep
 
 
-instance Sized a => Sized (Tree a)
-
 ----------Recognize user defined types --------------------------------
 notDefTypesQMonad :: Q [String] -> Q [String]
 notDefTypesQMonad xs = do list <- xs

@@ -8,6 +8,7 @@ import Sized
 import Arbitrary
 import TemplateAllv
 import TemplateArbitrary
+import TemplateSized
 import UUTReader
 import UUT
 import UUTReaderUtilities

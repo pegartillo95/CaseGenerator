@@ -10,14 +10,21 @@ import Sized
 import Arbitrary
 import TemplateAllv
 import TemplateArbitrary
+import TemplateSized
 import UUT
 import UUTReaderUtilities
 import UUTReaderUtilitiesDeep
 
-test_UUT = test
+--instance Sized a => Sized (Tree a)
 
 -------------call to gen_all and gen_arbitrary -------------------------------------
 $(gen_allv_str_listQ (notDefTypesQMonad (get_f_inp_types (head uutMethods))))
+
+-------------call to gen_sized and gen_arbitrary -------------------------------------
+$(gen_sized_str_listQ (notDefTypesQMonad (get_f_inp_types (head uutMethods))))
+
+------------------main test function------------------------------------------------
+test_UUT = test
 
 --------------Printing the ending information---------------------------------------
 
