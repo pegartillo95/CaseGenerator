@@ -45,6 +45,5 @@ printTestCases [] = ""
 printTestCases (y:ys) = (show y) ++ ", " ++ (printTestCases ys)
 
 ----------------------test function-------------------------------------
-test = if(length listArgs == 10) then error("correct length")
-       else error("incorrect length")--prueba listArgs
+test = prueba listArgs
         where listArgs = (smallest :: $(inputT (head uutMethods)))
