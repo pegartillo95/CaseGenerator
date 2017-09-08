@@ -21,9 +21,7 @@ import System.IO.Unsafe
 -----------------------------------------------------------------------------------
 
 main :: IO ()
-main = putStrLn ("Hola mundo")
-
---main = putStrLn (printInfoTuple test_UUT)
+main = putStrLn (printInfoTuple test_UUT)
 
 {-main = do 
           putStrLn (bonito)

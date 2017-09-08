@@ -38,7 +38,7 @@ gen_sized_str str = do
 gen_sized :: Name -> Int -> Q Dec
 gen_sized t n =
   do            
-     i_dec <- gen_instance (mkName "Allv") t n
+     i_dec <- gen_instance (mkName "Sized") t n
      return i_dec -- return the instance declaration
 
 gen_instance :: Name -> Name -> Int -> DecQ

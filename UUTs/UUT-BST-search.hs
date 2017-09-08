@@ -15,7 +15,7 @@ import GHC.Generics
 
 data Tree a = Node (Tree a) a (Tree a)
             | Empty
-            deriving Generic
+            deriving (Generic,Show)
 
 
 uutNargs :: Int

@@ -73,18 +73,17 @@ gen_allv t n =
        where gen_body :: [Int] -> [Name] -> [Name]-> [ExpQ]
              gen_body _ [] [] = []
              gen_body (i:is) (c:cs) (f:fs) --cInfo consts listOfF 
-                | null cs = [appsE listExps] ++
+                | null cs = [listExps] ++
                               (gen_body is cs fs)
-                | otherwise = [appsE (varE '(++):[appsE (mapE:constructorF:
-                            (allvFunc i))] ++ gen_body is cs fs)]
+                | otherwise = [appsE (varE '(++):[listExps] ++ gen_body is cs fs)]
                       where --constructorF decided to use the data constructor
                             --if having just one parameter or to use a function if
                             --having more than one. This is duo to the fact that
                             --if the data constructor has more than one parameter
                             --we need to apply compose to them and then apply a
                             --function over the result of compose.
-                            listExps = if(i > 0) then (mapE:constructorF:(allvFunc i))
-                                  else (constructorF:(allvFunc i))
+                            listExps = if(i > 0) then appsE (mapE:constructorF:(allvFunc i))
+                                       else listE [appsE (constructorF:[])]
 
                             constructorF 
                                 | i > 1 = varE f
