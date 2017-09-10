@@ -59,13 +59,13 @@ gen_allv :: Name -> Int -> Q Dec
 gen_allv t n =
   do (TyConI d) <- reify t
       --Extract all the type info of the data type 
-     (t_name,noSimplifiedName,cInfo,consts,typesCons) <- typeInfo (return d)
+     (t_name,noSimplifiedName,cInfo,consts,typesCons, isRec) <- typeInfo (return d)
      --We call to gen_instance with a name for the class, the name of the constructor,
      --a list of info of the constructors, the constructors itself, lists containing
      --the constructors, name of the data-type without being simplified, and lastly
      --the function to generate the body of the function of the class.            
      i_dec <- gen_instance (mkName "Allv") t_name cInfo consts
-                            typesCons noSimplifiedName (mkName "allv", gen_body) n
+                            typesCons noSimplifiedName (mkName "allv", gen_body) n isRec
      return i_dec -- return the instance declaration
             -- gen_body is the function that we pass as an argument to gen_instance
             --and later on is used to generate the body of the allv function 
@@ -104,16 +104,15 @@ gen_allv t n =
 --Construct an instance of class class_name for type for_type
 --with a corresponding function  to build the method body
 gen_instance :: Name -> Name -> [Int] -> [Name]
-
-                  -> [[Type]] -> Name -> Func -> Int -> DecQ
-gen_instance class_name for_name cInfo consts typesCons typeName_nosimp func n =
+                -> [[Type]] -> Name -> Func -> Int -> [Bool] -> DecQ
+gen_instance class_name for_name cInfo consts typesCons typeName_nosimp func n isRec =
   instanceD (cxt (map applyConst ctxTypes))
     (appT (conT class_name) (foldl appT (conT for_name) (map varT ctxTypes))) 
     [(func_def func)] 
       where func_def (func_name, gen_func)-- extracts func_name and gen_func
                 = funD func_name -- method name
                   -- generate function body
-                  [gen_clause gen_func cInfo consts typesCons typeName_nosimp]
+                  [gen_clause gen_func cInfo consts typesCons typeName_nosimp isRec]
             applyConst var_name = appT (conT class_name) (varT var_name)
 
             ctxTypes :: [Name]
@@ -122,8 +121,8 @@ gen_instance class_name for_name cInfo consts typesCons typeName_nosimp func n =
 
 -- Generate the pattern match and function body for a given method and
 -- a given data-type. gen_func is the function that generates the function body
-gen_clause :: Gen_func -> [Int] -> [Name] -> [[Type]] -> Name -> ClauseQ
-gen_clause gen_func cInfo consts typesCons typeName_nosimp = 
+gen_clause :: Gen_func -> [Int] -> [Name] -> [[Type]] -> Name -> [Bool] -> ClauseQ
+gen_clause gen_func cInfo consts typesCons typeName_nosimp isRec = 
       (clause []
              --here we execute the gen_function to generate the body of the function
             (normalB $ head (gen_func cInfoOrd constsOrd listOfFOutOrd))
@@ -138,9 +137,9 @@ gen_clause gen_func cInfo consts typesCons typeName_nosimp =
             --isRec checks which of the constructors of the given data-type
             --are recursive and which others are not. It returns a boolean list
             --where true means to be recursive and false to not to be recursive.
-            isRec = isRecAux typesCons
-            isRecAux [] = []
-            isRecAux (x:xs) = (or $ map (==(ConT typeName_nosimp)) x): isRecAux xs
+            --isRec = isRecAux typesCons
+            --isRecAux [] = []
+            --isRecAux (x:xs) = (or $ map (==(ConT typeName_nosimp)) x): isRecAux xs
             --ReorderL reorders all this lists so they have all non recursive
             --type constructors first and all recursive ones at the end
             reorderL = auxFirst cInfo consts listOfFOut isRec 0 False
@@ -192,14 +191,14 @@ gen_clause gen_func cInfo consts typesCons typeName_nosimp =
 --  > A list of names of the different type constructors.
 --  > List of lists each of the inner list having the types of the parameters of
 --      data constructor.
-typeInfo :: DecQ -> Q (Name, Name,[Int],[Name],[[Type]])
+typeInfo :: DecQ -> Q (Name, Name,[Int],[Name],[[Type]], [Bool])
 typeInfo m =
      do d <- m
         case d of
            d@(DataD _ _ _ _ _) ->
-            return $ (simpleName $ name d, name d , consA d, termsA d, listTypesA d)
+            return $ (simpleName $ name d, name d , consA d, termsA d, listTypesA d, isRec (name d) (listTypesA d))
            d@(NewtypeD _ _ _ _ _) ->
-            return $ (simpleName $ name d, name d , consA d, termsA d, listTypesA d)
+            return $ (simpleName $ name d, name d , consA d, termsA d, listTypesA d, isRec (name d) (listTypesA d))
            _ -> error ("derive: not a data type declaration: " ++ show d)
  
      where
@@ -230,6 +229,7 @@ typeInfo m =
         typesA (NormalC _ xs)         = map snd xs
         typesA (RecC _ xs)            = map (\(_, _, t) -> t) xs
         typesA (InfixC t1 _ t2)       = [snd t1] ++  [snd t2]
+
  
 simpleName :: Name -> Name
 simpleName nm =
@@ -239,3 +239,17 @@ simpleName nm =
         _:[]        -> mkName s
         _:t         -> mkName t
 
+isRec :: Name -> [[Type]] -> [Bool]
+isRec name xs = map (\x -> isRecAux name x) xs
+
+isRecAux :: Name -> [Type] -> Bool
+isRecAux name xs = or (map (\x -> isRecType name x) xs)
+
+isRecType :: Name -> Type -> Bool
+isRecType rN t@(VarT _) = False
+isRecType rN t@(ConT n) = n == rN
+isRecType rN t@(ListT) = False
+isRecType rN t@(TupleT 2) = False
+isRecType rN t@(TupleT 3) = False
+isRecType rN t@(TupleT 4) = False  
+isRecType rN t@(AppT x y) = (isRecType rN x) || (isRecType rN y)

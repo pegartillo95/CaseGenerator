@@ -17,7 +17,7 @@ import Unsafe.TrueName
 
 ------------------------Num test cases------------------------
 uutNumCases :: Int
-uutNumCases = 10
+uutNumCases = 1000
 
 --Class Allv
 class Allv a where

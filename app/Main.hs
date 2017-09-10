@@ -23,15 +23,20 @@ import System.IO.Unsafe
 main :: IO ()
 main = putStrLn (printInfoTuple test_UUT)
 
-{-main = do 
-          putStrLn (bonito)
+{-main = putStrLn $(get_f_inp_types "uutPrec" >>=
+                   (\x -> stringE $ (head x) ) )-}
 
-bonito :: String
-bonito = $(do 
-              (u:us) <- (gen_allv_str_listQ (notDefTypesQMonad (get_f_inp_types (head uutMethods))))
-              let s = pprint u
+{-main = putStrLn bonito2
+
+bonito = $(do t <- inputT (head uutMethods)
+              let s = pprint t
               let s' = stringE s
-              s')-}
+              s')
+
+bonito2 = $(do d <- gen_allv_str_listQ (notDefTypesQMonad (get_f_inp_types (head uutMethods)))
+               let s = pprint d
+               let s' = stringE s
+               s')-}
 
 {-main = putStrLn $(notDefTypesQMonad (get_f_inp_types (head uutMethods)) >>=
                    (\x -> stringE $ show x
