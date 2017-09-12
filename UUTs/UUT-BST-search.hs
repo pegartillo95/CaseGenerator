@@ -49,7 +49,3 @@ uutMethod x t@(Node l y r)
   | x > y  = uutMethod x r 
 
 uutPost x t o = o == (x `elem` inorder t)
-
-
-
-

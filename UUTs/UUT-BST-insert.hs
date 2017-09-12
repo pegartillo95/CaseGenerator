@@ -48,4 +48,6 @@ uutMethod x t@(Node l y r)
   | x == y = t
   | x > y  = Node l x (uutMethod x r)
 
-uutPost x t o = if x `member' inorder t then t == o else inorder o == sort (x : inorder t)
+uutPost x t o = if x `elem` inorder t then t == o else inorder o == sort (x : inorder t)
+
+
