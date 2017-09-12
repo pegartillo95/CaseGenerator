@@ -28,7 +28,7 @@ instance Sized Int where
   size x = 1
 
 instance Allv Int where
-  allv = [1..100]
+  allv = [1..5]
 
 instance Sized Char where
   size x = 1

@@ -16,9 +16,9 @@ import GHC.Generics
 -- Inserting in a Binary Search tree
 -- This is an example where the user defines a new type
 
-data Tree a = Node (Tree a) a (Tree a)
-            | Empty
-            deriving (Generic,Show)
+data Tree a = Empty
+            | Node (Tree a) a (Tree a)
+            deriving (Generic,Show,Eq)
 
 
 uutNargs :: Int
@@ -48,6 +48,4 @@ uutMethod x t@(Node l y r)
   | x == y = t
   | x > y  = Node l x (uutMethod x r)
 
-uutPost x t o = inorder o == sort (x : inorder t)
-
-
+uutPost x t o = if x `member' inorder t then t == o else inorder o == sort (x : inorder t)
