@@ -4,7 +4,6 @@
 
 module UUT where
 
-
 import qualified Arrays as A
 import qualified Bags as B
 import qualified Sets as S

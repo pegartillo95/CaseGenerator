@@ -21,12 +21,12 @@ import System.IO.Unsafe
 -----------------------------------------------------------------------------------
 
 main :: IO ()
-main = putStrLn (printInfoTuple test_UUT)
+--main = putStrLn (printInfoTuple test_UUT)
 
 {-main = putStrLn $(get_f_inp_types "uutPrec" >>=
                    (\x -> stringE $ (head x) ) )-}
 
-{-main = putStrLn bonito2
+main = putStrLn bonito2
 
 bonito = $(do t <- inputT (head uutMethods)
               let s = pprint t
@@ -36,7 +36,7 @@ bonito = $(do t <- inputT (head uutMethods)
 bonito2 = $(do d <- gen_allv_str_listQ (notDefTypesQMonad (get_f_inp_types (head uutMethods)))
                let s = pprint d
                let s' = stringE s
-               s')-}
+               s')
 
 {-main = putStrLn $(notDefTypesQMonad (get_f_inp_types (head uutMethods)) >>=
                    (\x -> stringE $ show x
